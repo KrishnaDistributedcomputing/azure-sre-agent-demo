@@ -117,6 +117,12 @@ See the [Business Showcase Portal Guide](docs/portal-guide.md) for audience
 paths, dashboard interpretation, all ten business scenarios, costing
 assumptions, a presentation playbook, and troubleshooting.
 
+Use the
+[Partner Engagement and Azure Implementation Requirements](docs/partner-engagement-requirements.md)
+as the mandatory baseline for partner-led customer interactions, technical
+decisions, implementation evidence, security, cost governance, operational
+handover, and acceptance.
+
 The managed identity has Log Analytics Reader access only on the demo workspace.
 The API caches query results for 60 seconds to limit query volume and cost.
 
