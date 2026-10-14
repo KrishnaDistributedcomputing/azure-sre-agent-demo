@@ -8,7 +8,7 @@ ms.topic: overview
 
 ## Overview
 
-This private evaluation project demonstrates Azure SRE Agent investigations,
+This public evaluation project demonstrates Azure SRE Agent investigations,
 telemetry correlation, alert response, Azure Monitor workbooks, and Live Reports
 across ten controlled failure modes.
 
@@ -96,6 +96,15 @@ and refreshes every 60 seconds:
 The public data endpoint supports 1, 4, 24, and 168-hour time ranges:
 
 <https://sredemo-be3wpifmuf.azurewebsites.net/api/dashboard-data?hours=24>
+
+Use the business cost planner to compare the 30-day evaluation with ongoing
+post-trial pricing assumptions:
+
+<https://sredemo-be3wpifmuf.azurewebsites.net/api/cost>
+
+See the [Business Showcase Portal Guide](docs/portal-guide.md) for audience
+paths, dashboard interpretation, all ten business scenarios, costing
+assumptions, a presentation playbook, and troubleshooting.
 
 The managed identity has Log Analytics Reader access only on the demo workspace.
 The API caches query results for 60 seconds to limit query volume and cost.

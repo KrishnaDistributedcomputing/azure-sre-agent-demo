@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Azure SRE Agent demonstration cost planner">
+  <title>Azure SRE Agent Evaluation Cost Plan</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #06111f;
+      --panel: #0d2942;
+      --line: #28516e;
+      --text: #edf8ff;
+      --muted: #a5bdcc;
+      --cyan: #42d9ff;
+      --green: #4ee1a0;
+      --amber: #ffbf5a;
+      --red: #ff6f7d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 15% 0, rgba(66,217,255,.16), transparent 28rem), linear-gradient(145deg, #071321, var(--bg));
+    }
+    .shell { width: min(1180px, calc(100% - 30px)); margin: 0 auto; padding: 30px 0 50px; }
+    nav { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 42px; }
+    .brand { color: var(--cyan); font-size: 12px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+    .nav-link { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: rgba(10,29,48,.88); text-decoration: none; font-size: 13px; font-weight: 750; }
+    .nav-link:hover { border-color: var(--cyan); }
+    h1 { max-width: 850px; margin: 0 0 14px; font-size: clamp(34px, 6vw, 64px); line-height: 1; letter-spacing: -.045em; }
+    .lede { max-width: 780px; margin: 0 0 28px; color: var(--muted); font-size: 17px; line-height: 1.65; }
+    .notice { margin-bottom: 18px; padding: 14px 16px; border: 1px solid rgba(255,191,90,.36); border-radius: 12px; background: rgba(92,61,14,.28); color: #ffe8bc; font-size: 13px; line-height: 1.55; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px; }
+    .panel { padding: 22px; border: 1px solid rgba(89,151,190,.25); border-radius: 16px; background: linear-gradient(145deg, rgba(18,47,73,.94), rgba(8,27,44,.96)); box-shadow: 0 24px 65px rgba(0,0,0,.28); }
+    .panel h2 { margin: 0 0 6px; font-size: 20px; }
+    .panel-note { margin: 0 0 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .phase { position: relative; overflow: hidden; }
+    .phase::after { content: ""; position: absolute; width: 130px; height: 130px; right: -45px; top: -45px; border-radius: 50%; background: var(--accent); opacity: .1; }
+    .phase-label { color: var(--accent); font-size: 10px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+    .price { margin: 13px 0 3px; font-size: 48px; font-weight: 900; letter-spacing: -.05em; }
+    .price small { color: var(--muted); font-size: 15px; font-weight: 600; letter-spacing: 0; }
+    .formula { color: var(--muted); font-size: 12px; }
+    .breakdown { display: grid; gap: 11px; margin-top: 20px; }
+    .cost-row { display: grid; grid-template-columns: 155px 1fr auto; align-items: center; gap: 12px; font-size: 12px; }
+    .track { height: 10px; overflow: hidden; border-radius: 999px; background: #061724; }
+    .bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--cyan), #668cff); }
+    .amount { min-width: 58px; text-align: right; font-weight: 800; }
+    label { display: block; margin-bottom: 20px; }
+    .label-row { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 8px; font-size: 13px; }
+    input[type="range"] { width: 100%; accent-color: var(--cyan); }
+    .total { display: flex; justify-content: space-between; align-items: end; gap: 20px; padding-top: 17px; border-top: 1px solid var(--line); }
+    .total span { color: var(--muted); font-size: 12px; }
+    .total strong { font-size: 34px; }
+    .budget { margin-top: 12px; padding: 11px 13px; border-radius: 10px; font-size: 12px; }
+    .budget.good { color: #caffdf; background: rgba(41,128,86,.24); }
+    .budget.over { color: #ffd7db; background: rgba(133,38,55,.28); }
+    .guardrails { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .guardrail { padding: 16px; border-radius: 12px; background: rgba(5,20,34,.56); border: 1px solid rgba(89,151,190,.18); }
+    .guardrail strong { display: block; margin-bottom: 7px; color: var(--green); font-size: 18px; }
+    .guardrail span { color: var(--muted); font-size: 11px; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 12px; border-top: 1px solid rgba(89,151,190,.17); text-align: left; font-size: 12px; vertical-align: top; }
+    th { color: var(--cyan); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    td { color: #d9eaf4; }
+    .actions { margin: 0; padding-left: 18px; color: #d9eaf4; font-size: 13px; line-height: 1.8; }
+    footer { margin-top: 20px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    @media (max-width: 780px) {
+      .grid, .guardrails { grid-template-columns: 1fr; }
+      .cost-row { grid-template-columns: 125px 1fr auto; }
+      .price { font-size: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav>
+      <span class="brand">Azure SRE Agent showcase</span>
+      <a class="nav-link" href="./portal">Return to reliability dashboard</a>
+    </nav>
+
+    <header>
+      <h1>Evaluation cost planner.</h1>
+      <p class="lede">Separate the 30-day evaluation from ongoing production pricing, test usage assumptions, and see which controls keep this demonstration aligned with a $100 monthly target.</p>
+    </header>
+
+    <div class="notice"><strong>Planning estimate:</strong> Prices vary by agreement, region, model provider, usage, tax, and future Azure pricing changes. Validate the final amount in the Azure pricing experience and Cost Management before approval.</div>
+
+    <section class="grid" aria-label="Evaluation and post-trial comparison">
+      <article class="panel phase" style="--accent:var(--green)">
+        <div class="phase-label">Current 30-day evaluation</div>
+        <div class="price" id="trial-price">$55 <small>estimated</small></div>
+        <div class="formula">Active-flow usage + low-cost demo infrastructure</div>
+        <div class="breakdown">
+          <div class="cost-row"><span>SRE Agent fixed charge</span><div class="track"><div class="bar" style="width:0"></div></div><span class="amount">$0 trial</span></div>
+          <div class="cost-row"><span>500 active-flow AAUs</span><div class="track"><div class="bar" style="width:50%"></div></div><span class="amount">$50</span></div>
+          <div class="cost-row"><span>Demo infrastructure</span><div class="track"><div class="bar" style="width:5%"></div></div><span class="amount">$5 est.</span></div>
+        </div>
+      </article>
+      <article class="panel phase" style="--accent:var(--red)">
+        <div class="phase-label">After the trial</div>
+        <div class="price" id="ongoing-price">$347 <small>estimated/month</small></div>
+        <div class="formula">$292 fixed Agent estimate + active usage + infrastructure</div>
+        <div class="breakdown">
+          <div class="cost-row"><span>SRE Agent fixed charge</span><div class="track"><div class="bar" style="width:84%"></div></div><span class="amount">~$292</span></div>
+          <div class="cost-row"><span>500 active-flow AAUs</span><div class="track"><div class="bar" style="width:14%"></div></div><span class="amount">$50</span></div>
+          <div class="cost-row"><span>Demo infrastructure</span><div class="track"><div class="bar" style="width:2%"></div></div><span class="amount">$5 est.</span></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>Interactive monthly estimate</h2>
+        <p class="panel-note">Adjust active-flow usage and non-Agent Azure services. The estimate shows why this design tears down the SRE Agent before fixed billing begins.</p>
+        <label>
+          <span class="label-row"><span>Active-flow Agent Analysis Units</span><strong id="aau-value">500 AAUs</strong></span>
+          <input id="aau" type="range" min="0" max="2000" step="50" value="500">
+        </label>
+        <label>
+          <span class="label-row"><span>Demo infrastructure estimate</span><strong id="infra-value">$5</strong></span>
+          <input id="infra" type="range" min="0" max="50" step="1" value="5">
+        </label>
+        <label>
+          <span class="label-row"><span>Pricing phase</span><strong id="phase-value">30-day trial</strong></span>
+          <input id="phase" type="range" min="0" max="1" step="1" value="0">
+        </label>
+        <div class="total"><span>Estimated monthly total</span><strong id="total">$55</strong></div>
+        <div id="budget-status" class="budget good">Within the $100 evaluation target by $45.</div>
+      </article>
+      <article class="panel">
+        <h2>How the estimate is built</h2>
+        <p class="panel-note">Use this model for planning, not invoicing. Each component has a different cost driver.</p>
+        <table>
+          <thead><tr><th>Component</th><th>Planning basis</th><th>Primary control</th></tr></thead>
+          <tbody>
+            <tr><td>SRE Agent fixed capacity</td><td>4 AAUs/hour × $0.10 × 730 hours ≈ $292/month after trial</td><td>Delete before trial ends or fund ongoing use</td></tr>
+            <tr><td>SRE Agent active flow</td><td>Selected AAUs × $0.10, before any provider multiplier effects</td><td>Set an Agent consumption allocation</td></tr>
+            <tr><td>Log Analytics</td><td>Ingested telemetry volume and retention</td><td>0.1 GB/day ingestion cap</td></tr>
+            <tr><td>Function and storage</td><td>Executions, duration, memory, transactions, and stored data</td><td>Flex Consumption and bounded scenarios</td></tr>
+          </tbody>
+        </table>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-bottom:16px">
+      <h2>Controls already deployed</h2>
+      <p class="panel-note">The controls limit evaluation exposure, but owners must still review Azure Cost Management and confirm teardown.</p>
+      <div class="guardrails">
+        <div class="guardrail"><strong>$100</strong><span>Monthly Azure budget with notifications</span></div>
+        <div class="guardrail"><strong>0.1 GB/day</strong><span>Log Analytics daily ingestion cap</span></div>
+        <div class="guardrail"><strong>500 AAUs</strong><span>Recommended active-flow allocation</span></div>
+        <div class="guardrail"><strong>Day 29</strong><span>Automatic deletion before fixed billing</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Business approval checklist</h2>
+      <ul class="actions">
+        <li>Confirm the SRE Agent trial start and end dates in the owning tenant.</li>
+        <li>Assign an owner to review budget alerts and Agent consumption each week.</li>
+        <li>Keep scenario runs bounded and avoid unnecessary model-assisted refreshes.</li>
+        <li>Confirm both demo resource groups are deleted before the trial expires.</li>
+        <li>Create a funded production estimate before extending the evaluation.</li>
+      </ul>
+    </section>
+
+    <footer>Estimate last reviewed October 14, 2026. The portal does not query billing data and does not replace Azure Cost Management, negotiated pricing, or an Azure invoice.</footer>
+  </main>
+
+  <script>
+    const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+    const aau = document.querySelector("#aau");
+    const infra = document.querySelector("#infra");
+    const phase = document.querySelector("#phase");
+
+    function updateEstimate() {
+      const activeCost = Number(aau.value) * 0.10;
+      const infrastructureCost = Number(infra.value);
+      const fixedCost = Number(phase.value) === 1 ? 292 : 0;
+      const total = activeCost + infrastructureCost + fixedCost;
+      document.querySelector("#aau-value").textContent = `${aau.value} AAUs`;
+      document.querySelector("#infra-value").textContent = currency.format(infrastructureCost);
+      document.querySelector("#phase-value").textContent = fixedCost ? "After trial" : "30-day trial";
+      document.querySelector("#total").textContent = currency.format(total);
+      const difference = Math.abs(100 - total);
+      const status = document.querySelector("#budget-status");
+      status.className = `budget ${total <= 100 ? "good" : "over"}`;
+      status.textContent = total <= 100
+        ? `Within the $100 evaluation target by ${currency.format(difference)}.`
+        : `Above the $100 evaluation target by ${currency.format(difference)}.`;
+    }
+
+    [aau, infra, phase].forEach(input => input.addEventListener("input", updateEstimate));
+    updateEstimate();
+  </script>
+</body>
+</html>

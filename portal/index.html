@@ -65,7 +65,21 @@
     .pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 6px rgba(78,225,160,.12); }
     h1 { max-width: 840px; margin: 12px 0 10px; font-size: clamp(32px, 5vw, 62px); line-height: .98; letter-spacing: -.045em; }
     .lede { max-width: 760px; margin: 0; color: var(--muted); font-size: 17px; line-height: 1.6; }
+    .demo-banner { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding: 13px 16px; border: 1px solid rgba(78,225,160,.28); border-radius: 12px; background: rgba(18,73,62,.34); color: #d5ffec; font-size: 13px; }
+    .demo-banner strong { color: var(--green); white-space: nowrap; }
+    .executive-summary { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    .summary-lead, .outcome-card { border: 1px solid rgba(89,151,190,.24); border-radius: 14px; background: linear-gradient(145deg, rgba(18,47,73,.88), rgba(8,27,44,.92)); box-shadow: var(--shadow); }
+    .summary-lead { padding: 21px; }
+    .summary-lead .label, .outcome-card .label { color: var(--cyan); font-size: 10px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    .summary-lead h2 { margin: 8px 0; font-size: 25px; line-height: 1.2; }
+    .summary-lead p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .outcome-card { padding: 18px; }
+    .outcome-icon { width: 40px; height: 40px; display: grid; place-items: center; margin-bottom: 14px; border-radius: 12px; background: rgba(66,217,255,.1); font-size: 21px; }
+    .outcome-card strong { display: block; margin: 7px 0 5px; font-size: 17px; }
+    .outcome-card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
     .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+    .nav-link { align-self: flex-end; display: inline-block; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: rgba(10,29,48,.88); font-size: 13px; font-weight: 750; text-decoration: none; }
+    .nav-link:hover { border-color: var(--cyan); }
     select, button {
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -76,6 +90,47 @@
     }
     button { cursor: pointer; font-weight: 750; }
     button:hover { border-color: var(--cyan); transform: translateY(-1px); }
+    .help {
+      position: relative;
+      width: 22px;
+      height: 22px;
+      display: inline-grid;
+      place-items: center;
+      margin-left: 6px;
+      padding: 0;
+      border-color: rgba(155,181,200,.4);
+      border-radius: 50%;
+      color: #c9e8fa;
+      font-size: 11px;
+      font-weight: 900;
+      vertical-align: middle;
+      z-index: 4;
+    }
+    .help::after {
+      content: attr(data-help);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 11px);
+      width: 250px;
+      padding: 11px 13px;
+      border: 1px solid rgba(66,217,255,.4);
+      border-radius: 10px;
+      background: #102d46;
+      box-shadow: 0 14px 38px rgba(0,0,0,.45);
+      color: #e8f7ff;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.45;
+      text-align: left;
+      text-transform: none;
+      letter-spacing: normal;
+      opacity: 0;
+      pointer-events: none;
+      translate: -50% 4px;
+      transition: opacity .16s, translate .16s;
+    }
+    .help::before { content: ""; position: absolute; left: 50%; bottom: calc(100% + 5px); border: 6px solid transparent; border-top-color: #102d46; opacity: 0; translate: -50% 0; }
+    .help:hover::after, .help:hover::before, .help:focus::after, .help:focus::before, .help.open::after, .help.open::before { opacity: 1; translate: -50% 0; }
     .status {
       display: none;
       margin-bottom: 18px;
@@ -92,11 +147,12 @@
       box-shadow: var(--shadow);
       backdrop-filter: blur(14px);
     }
-    .metric { min-height: 132px; padding: 18px; border-radius: 14px; position: relative; overflow: hidden; }
+    .metric { min-height: 132px; padding: 18px; border-radius: 14px; position: relative; overflow: visible; }
     .metric::after { content: ""; position: absolute; width: 70px; height: 70px; right: -20px; top: -20px; border-radius: 50%; background: var(--accent, var(--cyan)); opacity: .12; filter: blur(2px); }
     .metric .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
     .metric .value { margin-top: 16px; font-size: 34px; font-weight: 850; letter-spacing: -.04em; }
     .metric .hint { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .label-row { display: flex; align-items: center; }
     .grid { display: grid; grid-template-columns: .8fr 2.2fr; gap: 18px; margin-bottom: 18px; }
     .panel { border-radius: 16px; padding: 20px; min-width: 0; }
     .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 16px; }
@@ -141,6 +197,7 @@
     .scenario-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; font-size: 20px; background: rgba(66,217,255,.1); border: 1px solid rgba(66,217,255,.18); }
     .scenario-name { font-size: 14px; font-weight: 800; }
     .scenario-description { min-height: 34px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .scenario-kicker { color: var(--cyan); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
     .bar-track { height: 9px; overflow: hidden; border-radius: 999px; background: #071724; }
     .bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--cyan)); min-width: 3px; }
     .badge { min-width: 74px; padding: 5px 8px; border-radius: 999px; text-align: center; text-transform: uppercase; font-size: 10px; letter-spacing: .08em; font-weight: 850; }
@@ -164,8 +221,18 @@
     .flow-step:not(:last-child)::after { content: "›"; position: absolute; right: -17px; top: 50%; translate: 0 -54%; color: var(--cyan); font-size: 28px; }
     .flow-step strong { display: block; margin-bottom: 4px; color: var(--text); font-size: 12px; }
     .flow-step span { color: var(--muted); font-size: 10px; }
+    .guide-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .guide-card { padding: 17px; border-radius: 12px; background: rgba(5,20,34,.58); border: 1px solid rgba(89,151,190,.18); }
+    .guide-card .number { width: 29px; height: 29px; display: grid; place-items: center; margin-bottom: 11px; border-radius: 9px; color: #06111f; background: var(--cyan); font-weight: 900; }
+    .guide-card h3 { margin: 0 0 7px; font-size: 14px; }
+    .guide-card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .glossary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 14px; }
+    .term { padding: 12px; border-radius: 10px; background: rgba(8,29,47,.66); }
+    .term strong { display: block; margin-bottom: 4px; color: var(--amber); font-size: 11px; }
+    .term span { color: var(--muted); font-size: 10px; line-height: 1.45; }
     #trend { width: 100%; min-height: 300px; display: block; }
     .axis-label { fill: var(--muted); font-size: 10px; }
+    .axis-title { fill: #bed8e8; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
     .legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 8px; }
     .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 3px; background: var(--legend); }
     .guardrails { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
@@ -183,16 +250,21 @@
     .loading .metric .value, .loading .scenario-list, .loading #trend, .loading tbody { opacity: .35; }
     @media (max-width: 1080px) {
       .metrics { grid-template-columns: repeat(3, 1fr); }
+      .executive-summary { grid-template-columns: repeat(3, 1fr); }
+      .summary-lead { grid-column: 1 / -1; }
       .grid { grid-template-columns: 1fr; }
       .scenario-list { grid-template-columns: repeat(2, 1fr); }
       .detail-grid { grid-template-columns: repeat(2, 1fr); }
       .guardrails { grid-template-columns: repeat(2, 1fr); }
+      .guide-grid, .glossary { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 680px) {
       .shell { width: min(100% - 20px, 1480px); padding-top: 20px; }
       header { display: block; }
       .controls { margin-top: 20px; justify-content: flex-start; }
       .metrics { grid-template-columns: repeat(2, 1fr); }
+      .executive-summary, .guide-grid, .glossary { grid-template-columns: 1fr; }
+      .summary-lead { grid-column: auto; }
       .metric { min-height: 112px; }
       .metric .value { font-size: 27px; }
       .scenario-list, .detail-grid, .flow { grid-template-columns: 1fr; }
@@ -208,8 +280,8 @@
     <header>
       <div>
         <div class="eyebrow"><span class="pulse"></span> Live Azure telemetry</div>
-        <h1>Reliability under controlled pressure.</h1>
-        <p class="lede">A public, no-login view of ten deterministic Azure SRE scenarios, their operational signals, expected root causes, and the guardrails keeping this evaluation below budget.</p>
+        <h1>Protect customer experience before incidents become outages.</h1>
+        <p class="lede">See how Azure SRE Agent turns technical signals into business impact, guided investigation, and clear recovery actions across ten controlled reliability scenarios.</p>
       </div>
       <div class="controls">
         <label>
@@ -222,23 +294,53 @@
           </select>
         </label>
         <button id="refresh" type="button">Refresh now</button>
+        <a class="nav-link" href="./cost">View cost plan</a>
       </div>
     </header>
 
     <div id="status" class="status" role="alert"></div>
+    <div class="demo-banner">
+      <strong>Safe demonstration</strong>
+      <span>All incidents on this page are controlled simulations. They demonstrate investigation and recovery without affecting production customers.</span>
+    </div>
+    <section class="executive-summary" aria-label="Executive reliability summary">
+      <article class="summary-lead">
+        <div class="label">Executive summary</div>
+        <h2 id="executive-headline">Loading the latest reliability story...</h2>
+        <p id="executive-narrative">Live Azure telemetry is being translated into business outcomes.</p>
+      </article>
+      <article class="outcome-card">
+        <div class="outcome-icon">♥</div>
+        <div class="label">Customer experience</div>
+        <strong>Detect impact faster</strong>
+        <p>Connect errors, delays, and unavailable dependencies to the customer journeys they affect.</p>
+      </article>
+      <article class="outcome-card">
+        <div class="outcome-icon">◎</div>
+        <div class="label">Operational readiness</div>
+        <strong>Practice ten risks</strong>
+        <p>Exercise application, dependency, capacity, data, configuration, and release failures.</p>
+      </article>
+      <article class="outcome-card">
+        <div class="outcome-icon">$</div>
+        <div class="label">Financial control</div>
+        <strong>Stay within guardrails</strong>
+        <p>Use serverless hosting, capped telemetry, a monthly budget, and automatic teardown.</p>
+      </article>
+    </section>
     <section id="metrics" class="metrics" aria-label="Reliability scorecard"></section>
 
     <section class="grid">
       <article class="panel">
         <div class="panel-head">
-          <h2>Incident mix</h2>
+          <h2>Business impact mix <button class="help" type="button" data-help="High-impact scenarios represent simulated customer-facing failures. Watch-list scenarios represent degradation or operational risk that should be addressed before it becomes an outage." aria-label="Explain business impact mix">?</button></h2>
           <span class="panel-note">Live severity composition</span>
         </div>
         <div id="incident-mix" class="incident-mix"></div>
       </article>
       <article class="panel">
         <div class="panel-head">
-          <h2>Request volume, failures, and latency</h2>
+          <h2>Customer experience trend <button class="help" type="button" data-help="Blue shows transaction volume, red shows failed transactions, and amber shows P95 response time. P95 means 95 percent of requests completed within this duration." aria-label="Explain customer experience trend">?</button></h2>
           <span class="panel-note">Five-minute intervals</span>
         </div>
         <svg id="trend" viewBox="0 0 900 300" role="img" aria-label="Request and latency time series"></svg>
@@ -252,7 +354,7 @@
 
     <section class="panel" style="margin-bottom:18px">
       <div class="panel-head">
-        <h2>Interactive use-case explorer</h2>
+        <h2>Business risk scenarios <button class="help" type="button" data-help="Select a card to see the business impact, evidence, investigation path, SRE Agent contribution, remediation, and recovery definition." aria-label="Explain business risk scenarios">?</button></h2>
         <span class="panel-note">Select any scenario for the full SRE investigation story</span>
       </div>
       <div id="scenarios" class="scenario-list"></div>
@@ -261,7 +363,7 @@
 
     <section class="panel" style="margin-bottom:18px">
       <div class="panel-head">
-        <h2>How the showcase works</h2>
+        <h2>From signal to business action <button class="help" type="button" data-help="This operating model starts with a safe fault, collects evidence, correlates signals, investigates with SRE Agent, and improves the service." aria-label="Explain showcase workflow">?</button></h2>
         <span class="panel-note">From controlled fault to actionable SRE evidence</span>
       </div>
       <div class="flow" aria-label="SRE showcase data flow">
@@ -275,7 +377,7 @@
 
     <section class="panel" style="margin-bottom:18px">
       <div class="panel-head">
-        <h2>Cost and evaluation guardrails</h2>
+        <h2>Cost and evaluation guardrails <button class="help" type="button" data-help="These controls reduce unexpected evaluation spend. Azure SRE Agent fixed charges begin after the trial, so automatic teardown remains essential." aria-label="Explain cost guardrails">?</button></h2>
         <span class="panel-note">Designed for a 30-day trial</span>
       </div>
       <div id="guardrails" class="guardrails"></div>
@@ -283,7 +385,7 @@
 
     <section class="panel">
       <div class="panel-head">
-        <h2>Incident evidence and expected root causes</h2>
+        <h2>Evidence behind the story <button class="help" type="button" data-help="These are the latest controlled events from Log Analytics. Select any row to open the matching business scenario and investigation guide." aria-label="Explain incident evidence">?</button></h2>
         <span id="evidence-count" class="panel-note"></span>
       </div>
       <div class="table-wrap">
@@ -296,6 +398,27 @@
           </thead>
           <tbody id="evidence"></tbody>
         </table>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:18px">
+      <div class="panel-head">
+        <h2>How to use this dashboard</h2>
+        <span class="panel-note">A guide for business, operations, and engineering audiences</span>
+      </div>
+      <div class="guide-grid">
+        <article class="guide-card"><div class="number">1</div><h3>Start with the executive summary</h3><p>Use the headline, coverage, and impact mix to explain whether the demonstration has enough evidence to support a reliability conversation.</p></article>
+        <article class="guide-card"><div class="number">2</div><h3>Choose a business risk</h3><p>Select any scenario card. Start with business impact and recovery, then move into technical evidence and investigation when more detail is needed.</p></article>
+        <article class="guide-card"><div class="number">3</div><h3>Validate the evidence</h3><p>Use the trend and evidence table to connect the narrative to timestamps, status codes, duration, root cause, and correlation IDs.</p></article>
+        <article class="guide-card"><div class="number">4</div><h3>Discuss the SRE Agent role</h3><p>Explain how the agent helps reduce investigation time by correlating telemetry and proposing a likely fault domain. Human approval remains part of remediation.</p></article>
+        <article class="guide-card"><div class="number">5</div><h3>Confirm cost controls</h3><p>Review the budget, ingestion limit, active-flow allocation, scale-to-zero hosting, and teardown date before running additional demonstrations.</p></article>
+        <article class="guide-card"><div class="number">6</div><h3>Define a decision</h3><p>Finish each walkthrough with a recovery criterion, an owner, and a prevention action that can be measured in the next exercise.</p></article>
+      </div>
+      <div class="glossary" aria-label="Dashboard glossary">
+        <div class="term"><strong>P95 latency</strong><span>95 percent of requests finished within this duration. Lower is better.</span></div>
+        <div class="term"><strong>Severity 1</strong><span>A simulated high-impact failure requiring urgent investigation.</span></div>
+        <div class="term"><strong>Correlation ID</strong><span>A unique identifier used to follow one event across telemetry sources.</span></div>
+        <div class="term"><strong>AAU</strong><span>Agent Analysis Unit, the measure used for SRE Agent active-flow consumption.</span></div>
       </div>
     </section>
 
@@ -418,21 +541,59 @@
         success: "The known-good release restores service and deployment gates prevent recurrence."
       }
     };
+    const businessContexts = {
+      "http-500": ["Revenue protection", "Successful checkout rate"],
+      "latency": ["Customer experience", "Catalog response time"],
+      "dependency-failure": ["Partner resilience", "Payment completion rate"],
+      "throttling": ["Demand management", "Accepted request rate"],
+      "queue-backlog": ["Order operations", "Time to fulfillment"],
+      "poison-message": ["Data quality", "Valid order throughput"],
+      "memory-pressure": ["Platform efficiency", "Stable worker availability"],
+      "cpu-saturation": ["Platform efficiency", "Transactions per compute unit"],
+      "config-drift": ["Governance", "Configuration compliance"],
+      "deployment-regression": ["Change safety", "Successful release rate"]
+    };
+
+    function createHelp(text, label) {
+      const button = create("button", "help", "?");
+      button.type = "button";
+      button.dataset.help = text;
+      button.setAttribute("aria-label", label);
+      button.setAttribute("aria-expanded", "false");
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        const isOpen = button.classList.toggle("open");
+        button.setAttribute("aria-expanded", String(isOpen));
+      });
+      return button;
+    }
+
+    function renderExecutiveSummary(summary) {
+      const complete = summary.scenariosObserved === 10;
+      $("#executive-headline").textContent = complete
+        ? "The showcase has evidence for all ten planned business risks."
+        : `${summary.scenariosObserved} of 10 business risks have current evidence.`;
+      $("#executive-narrative").textContent =
+        `${summary.critical} high-impact and ${summary.warning} watch-list events were observed. ` +
+        `${number.format(summary.requests)} transactions were measured with a peak P95 response time of ${number.format(summary.p95DurationMs)} ms.`;
+    }
 
     function renderMetrics(summary) {
       const cards = [
-        ["Signals", summary.signals, "Controlled reliability events", "#42d9ff"],
-        ["Critical", summary.critical, "Severity 1", "#ff6f7d"],
-        ["Warnings", summary.warning, "Severity 2", "#ffbf5a"],
-        ["Coverage", `${summary.scenariosObserved}/10`, "Scenarios observed", "#4ee1a0"],
-        ["Requests", summary.requests, `${summary.failures} failed`, "#5f8cff"],
-        ["P95 latency", `${number.format(summary.p95DurationMs)} ms`, "Peak five-minute interval", "#d08cff"]
+        ["Business events", summary.signals, "Controlled reliability signals", "#42d9ff", "The number of controlled incident events found in the selected time range."],
+        ["High impact", summary.critical, "Simulated urgent risks", "#ff6f7d", "Severity 1 simulations that represent direct customer or revenue impact."],
+        ["Watch list", summary.warning, "Early operational risks", "#ffbf5a", "Severity 2 simulations that show degradation or operational risk before a full outage."],
+        ["Readiness", `${summary.scenariosObserved}/10`, "Risks exercised", "#4ee1a0", "How many of the ten planned reliability scenarios have observable evidence."],
+        ["Transactions", summary.requests, `${summary.failures} failed`, "#5f8cff", "Application requests recorded in the selected time range."],
+        ["Customer wait", `${number.format(summary.p95DurationMs)} ms`, "Peak P95 response time", "#d08cff", "At the peak interval, 95 percent of requests completed within this duration."]
       ];
       const root = $("#metrics");
-      root.replaceChildren(...cards.map(([label, value, hint, accent]) => {
+      root.replaceChildren(...cards.map(([label, value, hint, accent, help]) => {
         const card = create("article", "metric");
         card.style.setProperty("--accent", accent);
-        card.append(create("div", "label", label), create("div", "value", value), create("div", "hint", hint));
+        const labelRow = create("div", "label-row");
+        labelRow.append(create("div", "label", label), createHelp(help, `Explain ${label}`));
+        card.append(labelRow, create("div", "value", value), create("div", "hint", hint));
         return card;
       }));
     }
@@ -449,7 +610,7 @@
       value.append(create("small", "", "signals"));
       donut.append(value);
       const legend = create("div", "mix-legend");
-      [["Critical", summary.critical], ["Warning", summary.warning], ["Coverage", `${summary.scenariosObserved}/10`]].forEach(([label, count]) => {
+      [["High impact", summary.critical], ["Watch list", summary.warning], ["Readiness", `${summary.scenariosObserved}/10`]].forEach(([label, count]) => {
         const stat = create("div", "mix-stat");
         stat.append(create("strong", "", count), create("span", "", label));
         legend.append(stat);
@@ -459,6 +620,7 @@
 
     function showScenarioDetail(name, shouldScroll = false) {
       const detail = scenarioDetails[name];
+      const [category, businessKpi] = businessContexts[name];
       if (!detail) return;
       selectedScenario = name;
       document.querySelectorAll(".scenario").forEach(card => card.setAttribute("aria-pressed", String(card.dataset.scenario === name)));
@@ -470,6 +632,7 @@
       title.append(heading);
       const grid = create("div", "detail-grid");
       const blocks = [
+        ["Business measure", businessKpi],
         ["Business impact", detail.impact],
         ["What Azure observes", detail.signal],
         ["How the SRE Agent helps", detail.agent],
@@ -478,7 +641,7 @@
         ["Definition of recovery", detail.success]
       ];
       blocks.forEach(([label, content], index) => {
-        const block = create("section", `detail-block${index === 3 ? " wide" : ""}`);
+        const block = create("section", `detail-block${index === 4 ? " wide" : ""}`);
         block.append(create("h4", "", label));
         if (Array.isArray(content)) {
           const list = document.createElement("ul");
@@ -497,6 +660,7 @@
       const maximum = Math.max(1, ...coverage.map(item => item.count));
       $("#scenarios").replaceChildren(...coverage.map(item => {
         const detail = scenarioDetails[item.scenario];
+        const [category] = businessContexts[item.scenario];
         const row = create("button", "scenario");
         row.type = "button";
         row.dataset.scenario = item.scenario;
@@ -504,7 +668,7 @@
         row.setAttribute("aria-label", `Open detailed use case for ${detail.title}`);
         const top = create("div", "scenario-top");
         top.append(create("div", "scenario-icon", detail.icon), create("div", `badge ${item.status}`, item.count ? `${item.status} · ${item.count}` : item.status));
-        row.append(top, create("div", "scenario-name", detail.title), create("div", "scenario-description", detail.short));
+        row.append(top, create("div", "scenario-kicker", category), create("div", "scenario-name", detail.title), create("div", "scenario-description", detail.short));
         const track = create("div", "bar-track");
         const bar = create("div", "bar");
         bar.style.width = `${Math.max(3, (item.count / maximum) * 100)}%`;
@@ -531,23 +695,42 @@
         svg.append(message);
         return;
       }
-      const width = 900, height = 300, left = 48, right = 18, top = 18, bottom = 34;
+      const width = 900, height = 300, left = 50, right = 58, top = 28, bottom = 34;
       const plotWidth = width - left - right, plotHeight = height - top - bottom;
-      const maxValue = Math.max(1, ...series.flatMap(p => [Number(p.requests || 0), Number(p.failures || 0), Number(p.p95 || 0)]));
+      const maxTransactions = Math.max(1, ...series.flatMap(point => [Number(point.requests || 0), Number(point.failures || 0)]));
+      const maxLatency = Math.max(1, ...series.map(point => Number(point.p95 || 0)));
       for (let i = 0; i <= 4; i++) {
         const y = top + plotHeight * i / 4;
         svg.append(svgElement("line", { x1: left, x2: width - right, y1: y, y2: y, stroke: "#234b68", "stroke-width": 1 }));
-        const label = svgElement("text", { x: left - 8, y: y + 4, "text-anchor": "end", class: "axis-label" });
-        label.textContent = number.format(maxValue * (1 - i / 4));
-        svg.append(label);
+        const transactionLabel = svgElement("text", { x: left - 8, y: y + 4, "text-anchor": "end", class: "axis-label" });
+        transactionLabel.textContent = number.format(maxTransactions * (1 - i / 4));
+        const latencyLabel = svgElement("text", { x: width - right + 8, y: y + 4, "text-anchor": "start", class: "axis-label" });
+        latencyLabel.textContent = `${number.format(maxLatency * (1 - i / 4))} ms`;
+        svg.append(transactionLabel, latencyLabel);
       }
+      const leftTitle = svgElement("text", { x: left, y: 13, "text-anchor": "start", class: "axis-title" });
+      leftTitle.textContent = "Transactions";
+      const rightTitle = svgElement("text", { x: width - right, y: 13, "text-anchor": "end", class: "axis-title" });
+      rightTitle.textContent = "Response time";
+      svg.append(leftTitle, rightTitle);
       const pathFor = (field) => series.map((point, index) => {
         const x = left + (series.length === 1 ? plotWidth / 2 : index * plotWidth / (series.length - 1));
-        const y = top + plotHeight - Number(point[field] || 0) / maxValue * plotHeight;
+        const scale = field === "p95" ? maxLatency : maxTransactions;
+        const y = top + plotHeight - Number(point[field] || 0) / scale * plotHeight;
         return `${index ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
       }).join(" ");
       [["requests", "#42d9ff"], ["failures", "#ff6f7d"], ["p95", "#ffbf5a"]].forEach(([field, color]) => {
         svg.append(svgElement("path", { d: pathFor(field), fill: "none", stroke: color, "stroke-width": 3, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+        series.forEach((point, index) => {
+          const x = left + (series.length === 1 ? plotWidth / 2 : index * plotWidth / (series.length - 1));
+          const scale = field === "p95" ? maxLatency : maxTransactions;
+          const y = top + plotHeight - Number(point[field] || 0) / scale * plotHeight;
+          const dot = svgElement("circle", { cx: x, cy: y, r: 3.5, fill: color, stroke: "#081a2d", "stroke-width": 2 });
+          const title = svgElement("title");
+          title.textContent = `${field === "p95" ? "P95 response time" : field}: ${number.format(point[field] || 0)}${field === "p95" ? " ms" : ""}`;
+          dot.append(title);
+          svg.append(dot);
+        });
       });
       const first = new Date(series[0].timestamp);
       const last = new Date(series[series.length - 1].timestamp);
@@ -560,15 +743,17 @@
 
     function renderGuardrails(guardrails) {
       const values = [
-        [`$${guardrails.monthlyBudgetUsd}`, "Monthly Azure budget"],
-        [`${guardrails.dailyLogCapGb} GB`, "Daily Log Analytics cap"],
-        [`${guardrails.activeFlowAauLimit} AAUs`, "Recommended active-flow cap"],
-        [guardrails.hosting, "Scale-to-zero compute"],
-        [guardrails.teardownUtc ? dateTime.format(new Date(guardrails.teardownUtc)) : "Not set", "Automatic teardown"]
+        [`$${guardrails.monthlyBudgetUsd}`, "Monthly Azure budget", "Azure Cost Management sends alerts against this evaluation spending target."],
+        [`${guardrails.dailyLogCapGb} GB`, "Daily telemetry cap", "Log Analytics ingestion is capped to control telemetry cost."],
+        [`${guardrails.activeFlowAauLimit} AAUs`, "Agent usage allocation", "The recommended active-flow allocation reserves up to $50 at $0.10 per AAU."],
+        [guardrails.hosting, "Scale-to-zero compute", "The Function App uses serverless hosting so idle compute can scale down."],
+        [guardrails.teardownUtc ? dateTime.format(new Date(guardrails.teardownUtc)) : "Not set", "Automatic teardown", "The demo and SRE Agent resource groups are scheduled for deletion before fixed post-trial Agent charges begin."]
       ];
-      $("#guardrails").replaceChildren(...values.map(([value, label]) => {
+      $("#guardrails").replaceChildren(...values.map(([value, label, help]) => {
         const card = create("div", "guardrail");
-        card.append(create("strong", "", value), create("span", "", label));
+        const labelRow = create("div", "label-row");
+        labelRow.append(create("span", "", label), createHelp(help, `Explain ${label}`));
+        card.append(create("strong", "", value), labelRow);
         return card;
       }));
     }
@@ -604,6 +789,7 @@
         const response = await fetch(`./dashboard-data?hours=${hours}`, { cache: "no-store" });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+        renderExecutiveSummary(payload.summary);
         renderMetrics(payload.summary);
         renderIncidentMix(payload.summary);
         renderScenarios(payload.coverage);
@@ -621,6 +807,22 @@
 
     $("#refresh").addEventListener("click", loadDashboard);
     $("#range").addEventListener("change", loadDashboard);
+    document.querySelectorAll(".help").forEach(button => {
+      button.setAttribute("aria-expanded", "false");
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        const isOpen = button.classList.toggle("open");
+        button.setAttribute("aria-expanded", String(isOpen));
+      });
+    });
+    document.addEventListener("click", event => {
+      if (!event.target.closest(".help")) {
+        document.querySelectorAll(".help.open").forEach(button => {
+          button.classList.remove("open");
+          button.setAttribute("aria-expanded", "false");
+        });
+      }
+    });
     loadDashboard();
     setInterval(loadDashboard, 60000);
   </script>

@@ -487,3 +487,16 @@ def portal(req: func.HttpRequest) -> func.HttpResponse:
         mimetype="text/html",
         headers={"Cache-Control": "public, max-age=300"},
     )
+
+
+@app.route(route="cost", methods=["GET"])
+def cost(req: func.HttpRequest) -> func.HttpResponse:
+    """Serve the public evaluation cost-planning page."""
+    del req
+    cost_path = Path(__file__).parent / "portal" / "cost.html"
+    return func.HttpResponse(
+        cost_path.read_text(encoding="utf-8"),
+        status_code=200,
+        mimetype="text/html",
+        headers={"Cache-Control": "public, max-age=300"},
+    )

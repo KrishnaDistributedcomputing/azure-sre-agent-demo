@@ -73,3 +73,11 @@ def test_dashboard_payload_reports_full_scenario_coverage() -> None:
     assert payload["summary"]["p95DurationMs"] == 4020.0
     assert len(payload["coverage"]) == 10
     assert payload["coverage"][0]["status"] == "critical"
+
+
+def test_cost_page_is_available_without_authentication() -> None:
+    response = function_app.cost(MagicMock())
+
+    assert response.status_code == 200
+    assert response.mimetype == "text/html"
+    assert b"Evaluation cost planner" in response.get_body()
