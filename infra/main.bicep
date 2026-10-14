@@ -46,6 +46,10 @@ var contributorRoleDefinitionId = subscriptionResourceId(
   'Microsoft.Authorization/roleDefinitions',
   'b24988ac-6180-42a0-ab88-20f7382dd24c'
 )
+var readerRoleDefinitionId = subscriptionResourceId(
+  'Microsoft.Authorization/roleDefinitions',
+  'acdd72a7-3385-48ef-bd42-f606fba81ae7'
+)
 var budgetStartDate = '${substring(deploymentUtc, 0, 4)}-${substring(deploymentUtc, 5, 2)}-01T00:00:00Z'
 
 /*
@@ -125,6 +129,11 @@ module demoStack 'modules/demo-stack.bicep' = {
   scope: demoResourceGroup
   params: {
     alertEmail: alertEmail
+    inventoryResourceGroupNames: [
+      agentResourceGroupName
+      demoResourceGroupName
+      guardrailResourceGroupName
+    ]
     location: location
     resourcePrefix: 'sredemo'
     tags: commonTags
@@ -164,6 +173,34 @@ module guardrailDemoRole 'modules/role-assignment.bicep' = {
 }
 
 /*
+ * Public inventory permissions
+ */
+
+module inventoryAgentReader 'modules/role-assignment.bicep' = {
+  scope: agentResourceGroup
+  params: {
+    principalId: demoStack.outputs.functionPrincipalId
+    roleDefinitionId: readerRoleDefinitionId
+  }
+}
+
+module inventoryDemoReader 'modules/role-assignment.bicep' = {
+  scope: demoResourceGroup
+  params: {
+    principalId: demoStack.outputs.functionPrincipalId
+    roleDefinitionId: readerRoleDefinitionId
+  }
+}
+
+module inventoryGuardrailReader 'modules/role-assignment.bicep' = {
+  scope: guardrailResourceGroup
+  params: {
+    principalId: demoStack.outputs.functionPrincipalId
+    roleDefinitionId: readerRoleDefinitionId
+  }
+}
+
+/*
  * Outputs
  */
 
@@ -175,6 +212,12 @@ output functionAppHostName string = demoStack.outputs.functionAppHostName
 
 @description('Public no-login showcase portal URL.')
 output portalUrl string = demoStack.outputs.portalUrl
+
+@description('Public no-login component inventory dashboard URL.')
+output resourceDashboardUrl string = demoStack.outputs.resourceDashboardUrl
+
+@description('Public no-login evaluation cost planner URL.')
+output costPlannerUrl string = demoStack.outputs.costPlannerUrl
 
 @description('Function App name for code deployment.')
 output functionAppName string = demoStack.outputs.functionAppName

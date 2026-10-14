@@ -20,6 +20,9 @@ param tags object
 @description('UTC timestamp when the evaluation resources are automatically deleted.')
 param teardownUtc string
 
+@description('Resource groups included in the public read-only component inventory.')
+param inventoryResourceGroupNames array
+
 /*
  * Variables
  */
@@ -307,6 +310,10 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
           value: 'drifted'
         }
         {
+          name: 'SRE_DEMO_RESOURCE_GROUPS'
+          value: join(inventoryResourceGroupNames, ',')
+        }
+        {
           name: 'SRE_DEMO_QUEUE_NAME'
           value: queueName
         }
@@ -317,6 +324,10 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'SRE_DEMO_TEARDOWN_UTC'
           value: teardownUtc
+        }
+        {
+          name: 'SRE_DEMO_SUBSCRIPTION_ID'
+          value: subscription().subscriptionId
         }
         {
           name: 'SRE_DEMO_WORKSPACE_ID'
@@ -364,8 +375,17 @@ output functionAppHostName string = functionApp.properties.defaultHostName
 @description('Function App name.')
 output functionAppName string = functionApp.name
 
+@description('Object ID of the Function App system-assigned managed identity.')
+output functionPrincipalId string = functionApp.identity.principalId
+
 @description('Public no-login showcase portal URL.')
 output portalUrl string = 'https://${functionApp.properties.defaultHostName}/api/portal'
+
+@description('Public no-login component inventory dashboard URL.')
+output resourceDashboardUrl string = 'https://${functionApp.properties.defaultHostName}/api/resources'
+
+@description('Public no-login evaluation cost planner URL.')
+output costPlannerUrl string = 'https://${functionApp.properties.defaultHostName}/api/cost'
 
 @description('Log Analytics workspace resource ID.')
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id

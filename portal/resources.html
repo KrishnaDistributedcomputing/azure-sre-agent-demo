@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Live inventory of Azure components deployed for the SRE Agent showcase">
+  <title>Azure SRE Agent Component Command Center</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f8fb;
+      --panel: #fff;
+      --line: #c6dae6;
+      --text: #102a43;
+      --muted: #597184;
+      --cyan: #007da8;
+      --blue: #3d62c9;
+      --green: #16835a;
+      --amber: #a86000;
+      --red: #c13d50;
+      --shadow: 0 18px 48px rgba(38,77,102,.13);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 12% 4%, rgba(49,175,214,.18), transparent 30rem), linear-gradient(150deg, #f8fcfe, var(--bg) 50%, #eaf3f8);
+    }
+    .shell { width: min(1380px, calc(100% - 30px)); margin: 0 auto; padding: 28px 0 50px; }
+    nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 35px; }
+    .brand { color: var(--cyan); font-size: 12px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+    .links { display: flex; flex-wrap: wrap; gap: 8px; }
+    .nav-link, button, select, input { border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text); font: inherit; }
+    .nav-link { padding: 10px 13px; font-size: 12px; font-weight: 750; text-decoration: none; }
+    .nav-link:hover, button:hover { border-color: var(--cyan); }
+    header { display: flex; justify-content: space-between; align-items: end; gap: 25px; margin-bottom: 22px; }
+    h1 { max-width: 830px; margin: 0 0 12px; font-size: clamp(34px, 5vw, 62px); line-height: 1; letter-spacing: -.045em; }
+    .lede { max-width: 820px; margin: 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
+    .refresh { padding: 11px 15px; cursor: pointer; font-weight: 800; white-space: nowrap; }
+    .notice, .error { margin-bottom: 16px; padding: 12px 15px; border-radius: 11px; font-size: 12px; line-height: 1.5; }
+    .notice { border: 1px solid #b6d8e5; background: #edf8fc; color: #2d5c71; }
+    .error { display: none; border: 1px solid #edbec6; background: #fff0f2; color: #7d2332; }
+    .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+    .metric, .panel { border: 1px solid var(--line); background: linear-gradient(145deg, #fff, #f7fbfd); box-shadow: var(--shadow); }
+    .metric { padding: 17px; border-radius: 14px; }
+    .metric span { color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .metric strong { display: block; margin: 10px 0 4px; font-size: 31px; }
+    .metric small { color: var(--muted); font-size: 10px; }
+    .panel { margin-bottom: 16px; padding: 20px; border-radius: 16px; }
+    .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 18px; margin-bottom: 15px; }
+    h2 { margin: 0; font-size: 19px; }
+    .panel-note { color: var(--muted); font-size: 11px; }
+    .topology { display: grid; grid-template-columns: repeat(4, 1fr); align-items: stretch; gap: 28px; }
+    .layer { position: relative; padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
+    .layer:not(:last-child)::after { content: "›"; position: absolute; right: -20px; top: 50%; translate: 0 -50%; color: var(--cyan); font-size: 31px; }
+    .layer-label { color: var(--cyan); font-size: 9px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+    .layer h3 { margin: 7px 0 9px; font-size: 15px; }
+    .layer p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .layout { display: grid; grid-template-columns: .8fr 2.2fr; gap: 16px; }
+    .distribution { display: grid; gap: 13px; }
+    .distribution-row { display: grid; gap: 6px; }
+    .distribution-label { display: flex; justify-content: space-between; gap: 15px; font-size: 11px; }
+    .track { height: 9px; overflow: hidden; border-radius: 999px; background: #dceaf1; }
+    .bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--cyan), #668cff); }
+    .filters { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 9px; margin-bottom: 14px; }
+    input, select { width: 100%; padding: 10px 12px; font-size: 12px; }
+    .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
+    .resource-card { min-width: 0; padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+    .resource-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .category { color: var(--cyan); font-size: 9px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    .state { padding: 4px 7px; border-radius: 999px; color: #176242; background: #e4f6ed; font-size: 9px; font-weight: 850; text-transform: uppercase; }
+    .state.pending { color: #774a00; background: #fff2d8; }
+    .resource-card h3 { margin: 10px 0 4px; overflow-wrap: anywhere; font-size: 14px; }
+    .type { color: var(--muted); font-size: 10px; }
+    .purpose { min-height: 47px; margin: 11px 0; color: #405e71; font-size: 11px; line-height: 1.45; }
+    .metadata { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .meta { padding: 8px; border-radius: 8px; background: #f2f7fa; min-width: 0; }
+    .meta span { display: block; margin-bottom: 2px; color: var(--muted); font-size: 8px; text-transform: uppercase; }
+    .meta strong { display: block; overflow: hidden; color: #29495c; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .support-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .support { padding: 15px; border: 1px solid var(--line); border-radius: 11px; background: #f7fbfd; }
+    .support strong { display: block; margin: 7px 0 5px; font-size: 13px; }
+    .support p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+    footer { display: flex; justify-content: space-between; gap: 20px; color: var(--muted); font-size: 10px; }
+    .loading .cards, .loading .distribution, .loading .metric strong { opacity: .35; }
+    @media (max-width: 1000px) {
+      .metrics { grid-template-columns: repeat(3, 1fr); }
+      .layout { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .support-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 680px) {
+      header, nav, footer { display: block; }
+      .links, .refresh { margin-top: 14px; }
+      .metrics, .cards, .support-grid, .filters, .topology { grid-template-columns: 1fr; }
+      .layer:not(:last-child)::after { content: "⌄"; right: 50%; top: auto; bottom: -25px; translate: 50% 0; }
+    }
+  </style>
+</head>
+<body class="loading">
+  <main class="shell">
+    <nav>
+      <span class="brand">Azure SRE Agent showcase</span>
+      <div class="links">
+        <a class="nav-link" href="./portal">Reliability dashboard</a>
+        <a class="nav-link" href="./cost">Cost planner</a>
+      </div>
+    </nav>
+
+    <header>
+      <div>
+        <h1>Azure component command center.</h1>
+        <p class="lede">A live, read-only view of every top-level Azure resource deployed for the SRE Agent evaluation, the role each component plays, and the supporting controls behind the architecture.</p>
+      </div>
+      <button id="refresh" class="refresh" type="button">Refresh inventory</button>
+    </header>
+
+    <div class="notice">This public inventory exposes resource names, types, locations, and provisioning states only. It does not expose credentials, application settings, access tokens, telemetry content, or billing records.</div>
+    <div id="error" class="error" role="alert"></div>
+
+    <section id="metrics" class="metrics" aria-label="Azure component summary"></section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>How the deployed architecture works</h2>
+        <span class="panel-note">Four connected capability layers</span>
+      </div>
+      <div class="topology">
+        <article class="layer"><div class="layer-label">Experience</div><h3>Public portals and workbook</h3><p>Business, reliability, cost, component, and Azure Monitor views communicate the evidence.</p></article>
+        <article class="layer"><div class="layer-label">Compute and AI</div><h3>Functions and SRE Agent</h3><p>Serverless APIs generate safe scenarios while SRE Agent supports investigation.</p></article>
+        <article class="layer"><div class="layer-label">Evidence</div><h3>Insights and Log Analytics</h3><p>Application telemetry is collected, correlated, queried, and converted into alerts.</p></article>
+        <article class="layer"><div class="layer-label">Control</div><h3>Storage, identity, and guardrails</h3><p>Queues, managed identity, RBAC, budgets, and teardown keep the evaluation bounded.</p></article>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Deployment distribution</h2>
+          <span class="panel-note">Top-level resources</span>
+        </div>
+        <div id="distribution" class="distribution"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Live component inventory</h2>
+          <span id="component-count" class="panel-note"></span>
+        </div>
+        <div class="filters">
+          <input id="search" type="search" placeholder="Search component name, type, or purpose" aria-label="Search components">
+          <select id="group-filter" aria-label="Filter by resource group"><option value="">All resource groups</option></select>
+          <select id="category-filter" aria-label="Filter by category"><option value="">All capability areas</option></select>
+        </div>
+        <div id="components" class="cards"></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Supporting and child components</h2>
+        <span class="panel-note">Deployed controls not returned as top-level Resource Graph rows</span>
+      </div>
+      <div id="supporting" class="support-grid"></div>
+    </section>
+
+    <footer>
+      <span id="updated">Waiting for Azure Resource Graph...</span>
+      <span>Read-only managed identity · five-minute cache · three resource groups</span>
+    </footer>
+  </main>
+
+  <script>
+    const $ = selector => document.querySelector(selector);
+    const number = new Intl.NumberFormat("en-US");
+    const dateTime = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "medium" });
+    let inventory = null;
+
+    function create(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function renderMetrics(payload) {
+      const values = [
+        ["Azure resources", payload.summary.resources, "Live top-level inventory"],
+        ["Resource groups", payload.summary.resourceGroups, "Demo, Agent, and guardrails"],
+        ["Capability areas", payload.summary.categories, "Business architecture roles"],
+        ["Azure locations", payload.summary.locations, "Including global services"],
+        ["Supporting controls", payload.supportingComponents.length, "Budget, queue, package, and RBAC"]
+      ];
+      $("#metrics").replaceChildren(...values.map(([label, value, hint]) => {
+        const card = create("article", "metric");
+        card.append(create("span", "", label), create("strong", "", number.format(value)), create("small", "", hint));
+        return card;
+      }));
+    }
+
+    function renderDistribution(groups) {
+      const maximum = Math.max(1, ...groups.map(group => group.resourceCount));
+      $("#distribution").replaceChildren(...groups.map(group => {
+        const row = create("div", "distribution-row");
+        const label = create("div", "distribution-label");
+        label.append(create("span", "", group.name), create("strong", "", group.resourceCount));
+        const track = create("div", "track");
+        const bar = create("div", "bar");
+        bar.style.width = `${group.resourceCount / maximum * 100}%`;
+        track.append(bar);
+        row.append(label, track);
+        return row;
+      }));
+    }
+
+    function fillFilters(payload) {
+      const addOptions = (selector, values) => {
+        const select = $(selector);
+        select.length = 1;
+        values.forEach(value => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          select.append(option);
+        });
+      };
+      addOptions("#group-filter", payload.resourceGroups.map(group => group.name));
+      addOptions("#category-filter", payload.categories.map(category => category.name));
+    }
+
+    function renderComponents() {
+      if (!inventory) return;
+      const search = $("#search").value.trim().toLowerCase();
+      const group = $("#group-filter").value;
+      const category = $("#category-filter").value;
+      const components = inventory.components.filter(component => {
+        const haystack = `${component.name} ${component.typeLabel} ${component.purpose}`.toLowerCase();
+        return (!search || haystack.includes(search))
+          && (!group || component.resourceGroup === group)
+          && (!category || component.category === category);
+      });
+      $("#component-count").textContent = `${components.length} of ${inventory.components.length} resources`;
+      $("#components").replaceChildren(...components.map(component => {
+        const card = create("article", "resource-card");
+        const top = create("div", "resource-top");
+        top.append(create("span", "category", component.category));
+        const stateClass = component.state.toLowerCase() === "succeeded" || component.state.toLowerCase() === "available" ? "state" : "state pending";
+        top.append(create("span", stateClass, component.state));
+        card.append(top, create("h3", "", component.name), create("div", "type", component.typeLabel), create("p", "purpose", component.purpose));
+        const metadata = create("div", "metadata");
+        [["Resource group", component.resourceGroup], ["Location", component.location], ["SKU", component.sku || "Managed"], ["Kind", component.kind || "Standard"]].forEach(([label, value]) => {
+          const item = create("div", "meta");
+          item.append(create("span", "", label), create("strong", "", value));
+          item.title = value;
+          metadata.append(item);
+        });
+        card.append(metadata);
+        return card;
+      }));
+    }
+
+    function renderSupporting(components) {
+      $("#supporting").replaceChildren(...components.map(component => {
+        const card = create("article", "support");
+        card.append(create("span", "category", component.category), create("strong", "", component.name), create("div", "type", component.typeLabel), create("p", "", component.purpose));
+        return card;
+      }));
+    }
+
+    async function loadInventory() {
+      document.body.classList.add("loading");
+      $("#error").style.display = "none";
+      try {
+        const response = await fetch("./resources-data", { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+        inventory = payload;
+        renderMetrics(payload);
+        renderDistribution(payload.resourceGroups);
+        fillFilters(payload);
+        renderComponents();
+        renderSupporting(payload.supportingComponents);
+        $("#updated").textContent = `Inventory updated ${dateTime.format(new Date(payload.generatedAt))}`;
+      } catch (error) {
+        $("#error").textContent = `Azure component inventory is temporarily unavailable: ${error.message}`;
+        $("#error").style.display = "block";
+      } finally {
+        document.body.classList.remove("loading");
+      }
+    }
+
+    $("#refresh").addEventListener("click", loadInventory);
+    ["#search", "#group-filter", "#category-filter"].forEach(selector => $(selector).addEventListener("input", renderComponents));
+    loadInventory();
+  </script>
+</body>
+</html>

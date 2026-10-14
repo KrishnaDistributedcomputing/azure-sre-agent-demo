@@ -102,6 +102,17 @@ post-trial pricing assumptions:
 
 <https://sredemo-be3wpifmuf.azurewebsites.net/api/cost>
 
+Use the live Azure component command center to review all top-level resources
+across the demo, SRE Agent, and guardrail resource groups:
+
+<https://sredemo-be3wpifmuf.azurewebsites.net/api/resources>
+
+The component API queries Azure Resource Graph through the Function App
+system-assigned managed identity. Its Reader access is limited to the three
+evaluation resource groups, and responses expose inventory metadata only:
+
+<https://sredemo-be3wpifmuf.azurewebsites.net/api/resources-data>
+
 See the [Business Showcase Portal Guide](docs/portal-guide.md) for audience
 paths, dashboard interpretation, all ten business scenarios, costing
 assumptions, a presentation playbook, and troubleshooting.

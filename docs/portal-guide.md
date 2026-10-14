@@ -19,14 +19,19 @@ operational decisions, recovery actions, and cost controls. It is designed for
 business leaders, service owners, SRE teams, application engineers, and
 governance stakeholders.
 
-The experience has two pages:
+The experience has three pages:
 
 * [Reliability dashboard](https://sredemo-be3wpifmuf.azurewebsites.net/api/portal)
 * [Evaluation cost planner](https://sredemo-be3wpifmuf.azurewebsites.net/api/cost)
+* [Azure component command center](https://sredemo-be3wpifmuf.azurewebsites.net/api/resources)
 
-Neither page requires a browser login. The reliability API queries the demo Log
+None of the pages requires a browser login. The reliability API queries the demo Log
 Analytics workspace through the Function App managed identity. The cost planner
 uses documented planning assumptions and does not query Azure billing data.
+
+The component command center queries Azure Resource Graph every five minutes.
+The Function App managed identity has Reader access only on the demo, SRE Agent,
+and guardrail resource groups.
 
 > [!IMPORTANT]
 > Every incident displayed by the portal is a controlled simulation. Do not
@@ -212,6 +217,66 @@ Pricing may vary because of:
 * Future Azure pricing changes
 
 Validate approval figures in Azure pricing resources and Cost Management.
+
+## Azure component command center
+
+The component command center provides a live inventory of the top-level Azure
+resources deployed for the evaluation.
+
+### Summary and architecture
+
+The summary reports:
+
+* Top-level Azure resource count
+* Resource group count
+* Capability area count
+* Azure location count
+* Supporting control count
+
+The architecture diagram groups the deployment into experience, compute and AI,
+evidence, and control layers. Use it to explain how the public portals, Function
+App, SRE Agent, observability services, storage, identity, and guardrails work
+together.
+
+### Inventory filters
+
+Search by component name, resource type, or purpose. Filter the inventory by
+resource group or capability area. Each card shows:
+
+* Provisioning state
+* Business capability
+* Azure resource name and type
+* Resource group and location
+* SKU and kind
+* Purpose in the evaluation
+
+The resource-group distribution chart shows where the top-level resources are
+deployed.
+
+### Supporting components
+
+Some deployed components do not appear as top-level Azure Resource Graph rows.
+The dashboard lists these separately:
+
+* $100 Cost Management budget
+* Storage queue for backlog and poison-message scenarios
+* Private Function deployment package container
+* Least-privilege Azure RBAC assignments
+
+### Inventory security
+
+The public component API exposes resource inventory metadata only. It does not
+return:
+
+* Access tokens or credentials
+* Function application settings
+* Storage keys or connection strings
+* Telemetry records
+* Billing records
+* Role-assignment principal details
+
+The server filters results to the three configured evaluation resource groups,
+even if the managed identity receives broader permissions later.
 
 ## Demonstration playbook
 

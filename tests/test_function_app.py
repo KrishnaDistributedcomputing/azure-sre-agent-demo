@@ -81,3 +81,45 @@ def test_cost_page_is_available_without_authentication() -> None:
     assert response.status_code == 200
     assert response.mimetype == "text/html"
     assert b"Evaluation cost planner" in response.get_body()
+
+
+def test_resource_inventory_groups_components_for_business_view() -> None:
+    inventory = function_app._build_resource_inventory(
+        [
+            {
+                "id": "/subscriptions/test/resourceGroups/demo/providers/Microsoft.Web/sites/app",
+                "name": "app",
+                "type": "microsoft.web/sites",
+                "resourceGroup": "demo",
+                "location": "westus2",
+                "kind": "functionapp,linux",
+                "sku": "",
+                "provisioningState": "Succeeded",
+            },
+            {
+                "id": "/subscriptions/test/resourceGroups/demo/providers/"
+                "Microsoft.OperationalInsights/workspaces/log",
+                "name": "log",
+                "type": "microsoft.operationalinsights/workspaces",
+                "resourceGroup": "demo",
+                "location": "westus2",
+                "kind": "",
+                "sku": "PerGB2018",
+                "provisioningState": "Succeeded",
+            },
+        ]
+    )
+
+    assert inventory["summary"]["resources"] == 2
+    assert inventory["summary"]["resourceGroups"] == 1
+    assert inventory["resourceGroups"] == [{"name": "demo", "resourceCount": 2}]
+    assert inventory["components"][0]["category"] == "Compute"
+    assert len(inventory["supportingComponents"]) == 4
+
+
+def test_resource_dashboard_is_available_without_authentication() -> None:
+    response = function_app.resources(MagicMock())
+
+    assert response.status_code == 200
+    assert response.mimetype == "text/html"
+    assert b"Azure component command center" in response.get_body()

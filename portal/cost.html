@@ -28,6 +28,7 @@
     }
     .shell { width: min(1180px, calc(100% - 30px)); margin: 0 auto; padding: 30px 0 50px; }
     nav { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 42px; }
+    nav > div { display: flex; flex-wrap: wrap; gap: 8px; }
     .brand { color: var(--cyan); font-size: 12px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
     .nav-link { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: #fff; text-decoration: none; font-size: 13px; font-weight: 750; }
     .nav-link:hover { border-color: var(--cyan); }
@@ -79,7 +80,10 @@
   <main class="shell">
     <nav>
       <span class="brand">Azure SRE Agent showcase</span>
-      <a class="nav-link" href="./portal">Return to reliability dashboard</a>
+      <div>
+        <a class="nav-link" href="./portal">Reliability dashboard</a>
+        <a class="nav-link" href="./resources">Azure components</a>
+      </div>
     </nav>
 
     <header>

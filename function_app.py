@@ -27,6 +27,8 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 logger = logging.getLogger("sre_demo")
 _dashboard_cache: tuple[float, int, dict[str, object]] | None = None
 _dashboard_cache_lock = threading.Lock()
+_resource_cache: tuple[float, dict[str, object]] | None = None
+_resource_cache_lock = threading.Lock()
 _credential: DefaultAzureCredential | None = None
 
 SCENARIO_NAMES = (
@@ -41,6 +43,67 @@ SCENARIO_NAMES = (
     "config-drift",
     "deployment-regression",
 )
+
+RESOURCE_METADATA = {
+    "microsoft.app/agents": (
+        "AI operations",
+        "Azure SRE Agent investigates reliability signals and recommends actions.",
+    ),
+    "microsoft.insights/actiongroups": (
+        "Alerting",
+        "Routes reliability notifications to the demo owner.",
+    ),
+    "microsoft.insights/components": (
+        "Observability",
+        "Application Insights collects request, exception, and dependency telemetry.",
+    ),
+    "microsoft.insights/scheduledqueryrules": (
+        "Alerting",
+        "Detects controlled severity 1 and severity 2 scenario signals.",
+    ),
+    "microsoft.insights/workbooks": (
+        "Visualization",
+        "Provides the Azure Monitor workbook experience.",
+    ),
+    "microsoft.logic/workflows": (
+        "Cost governance",
+        "Deletes evaluation resource groups before fixed Agent billing begins.",
+    ),
+    "microsoft.managedidentity/userassignedidentities": (
+        "Identity",
+        "Provides credential-free access for Azure services and deployment operations.",
+    ),
+    "microsoft.operationalinsights/workspaces": (
+        "Observability",
+        "Stores and queries correlated operational telemetry.",
+    ),
+    "microsoft.storage/storageaccounts": (
+        "Data services",
+        "Stores Function packages and controlled queue scenario messages.",
+    ),
+    "microsoft.web/serverfarms": (
+        "Compute",
+        "Supplies scale-to-zero Flex Consumption capacity.",
+    ),
+    "microsoft.web/sites": (
+        "Compute",
+        "Hosts scenario APIs and all public showcase dashboards.",
+    ),
+}
+
+RESOURCE_TYPE_LABELS = {
+    "microsoft.app/agents": "Azure SRE Agent",
+    "microsoft.insights/actiongroups": "Azure Monitor Action Group",
+    "microsoft.insights/components": "Application Insights",
+    "microsoft.insights/scheduledqueryrules": "Scheduled Query Alert",
+    "microsoft.insights/workbooks": "Azure Monitor Workbook",
+    "microsoft.logic/workflows": "Logic App Workflow",
+    "microsoft.managedidentity/userassignedidentities": "User-Assigned Managed Identity",
+    "microsoft.operationalinsights/workspaces": "Log Analytics Workspace",
+    "microsoft.storage/storageaccounts": "Storage Account",
+    "microsoft.web/serverfarms": "Flex Consumption Plan",
+    "microsoft.web/sites": "Function App",
+}
 
 
 @dataclass(frozen=True)
@@ -281,6 +344,166 @@ def _query_workspace(query: str) -> list[dict[str, object]]:
     return [dict(zip(columns, row, strict=True)) for row in table["rows"]]
 
 
+def _query_resource_graph() -> list[dict[str, object]]:
+    subscription_id = os.environ["SRE_DEMO_SUBSCRIPTION_ID"]
+    token = _logs_credential().get_token("https://management.azure.com/.default").token
+    query = """
+Resources
+| project
+    id,
+    name,
+    type=tolower(type),
+    resourceGroup,
+    location,
+    kind,
+    sku=tostring(sku.name),
+    provisioningState=tostring(properties.provisioningState)
+| order by resourceGroup asc, type asc, name asc
+"""
+    request = Request(
+        "https://management.azure.com/providers/Microsoft.ResourceGraph/resources"
+        "?api-version=2022-10-01",
+        data=json.dumps(
+            {
+                "subscriptions": [subscription_id],
+                "query": query,
+                "options": {"resultFormat": "objectArray"},
+            }
+        ).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        details = error.read().decode("utf-8", errors="replace")
+        message = f"Azure Resource Graph query failed with HTTP {error.code}: {details}"
+        raise RuntimeError(message) from error
+    except URLError as error:
+        raise RuntimeError(f"Azure Resource Graph query failed: {error.reason}") from error
+
+    allowed_groups = {
+        name.strip().lower()
+        for name in os.environ["SRE_DEMO_RESOURCE_GROUPS"].split(",")
+        if name.strip()
+    }
+    return [
+        resource
+        for resource in payload.get("data", [])
+        if str(resource.get("resourceGroup", "")).lower() in allowed_groups
+    ]
+
+
+def _build_resource_inventory(resources: list[dict[str, object]]) -> dict[str, object]:
+    components: list[dict[str, object]] = []
+    resource_groups: dict[str, int] = {}
+    categories: dict[str, int] = {}
+    states: dict[str, int] = {}
+    locations: set[str] = set()
+
+    for resource in resources:
+        resource_type = str(resource.get("type", "")).lower()
+        category, purpose = RESOURCE_METADATA.get(
+            resource_type,
+            ("Platform service", "Supports the Azure SRE Agent evaluation."),
+        )
+        resource_group = str(resource.get("resourceGroup", ""))
+        state = str(resource.get("provisioningState") or "Available")
+        location = str(resource.get("location") or "global")
+        resource_groups[resource_group] = resource_groups.get(resource_group, 0) + 1
+        categories[category] = categories.get(category, 0) + 1
+        states[state] = states.get(state, 0) + 1
+        locations.add(location)
+        components.append(
+            {
+                "id": resource.get("id"),
+                "name": resource.get("name"),
+                "type": resource_type,
+                "typeLabel": RESOURCE_TYPE_LABELS.get(
+                    resource_type,
+                    resource_type.split("/")[-1].replace("-", " ").title(),
+                ),
+                "resourceGroup": resource_group,
+                "location": location,
+                "kind": resource.get("kind") or "",
+                "sku": resource.get("sku") or "",
+                "state": state,
+                "category": category,
+                "purpose": purpose,
+            }
+        )
+
+    return {
+        "generatedAt": datetime.now(UTC).isoformat(),
+        "summary": {
+            "resources": len(components),
+            "resourceGroups": len(resource_groups),
+            "categories": len(categories),
+            "locations": len(locations),
+        },
+        "resourceGroups": [
+            {"name": name, "resourceCount": count}
+            for name, count in sorted(resource_groups.items())
+        ],
+        "categories": [
+            {"name": name, "resourceCount": count}
+            for name, count in sorted(categories.items())
+        ],
+        "states": [
+            {"name": name, "resourceCount": count}
+            for name, count in sorted(states.items())
+        ],
+        "components": components,
+        "supportingComponents": [
+            {
+                "name": "azure-sre-agent-demo-monthly",
+                "category": "Cost governance",
+                "typeLabel": "Cost Management budget",
+                "purpose": "Alerts at 50%, 80%, and forecasted 100% of the $100 monthly target.",
+            },
+            {
+                "name": "sre-demo-events",
+                "category": "Data services",
+                "typeLabel": "Azure Storage queue",
+                "purpose": "Supports backlog and poison-message scenarios.",
+            },
+            {
+                "name": "Function deployment package",
+                "category": "Data services",
+                "typeLabel": "Private blob container",
+                "purpose": "Stores the remotely built Function application package.",
+            },
+            {
+                "name": "Least-privilege role assignments",
+                "category": "Identity",
+                "typeLabel": "Azure RBAC",
+                "purpose": (
+                    "Limits telemetry reading, deployment storage, inventory, "
+                    "and teardown access."
+                ),
+            },
+        ],
+    }
+
+
+def _resource_inventory_payload() -> dict[str, object]:
+    global _resource_cache
+    now = time.monotonic()
+    with _resource_cache_lock:
+        if _resource_cache is not None and now - _resource_cache[0] < 300:
+            return _resource_cache[1]
+
+    payload = _build_resource_inventory(_query_resource_graph())
+    with _resource_cache_lock:
+        _resource_cache = (now, payload)
+    return payload
+
+
 def _scenario_query(hours: int) -> str:
     return f"""
 AppTraces
@@ -483,6 +706,34 @@ def portal(req: func.HttpRequest) -> func.HttpResponse:
     portal_path = Path(__file__).parent / "portal" / "index.html"
     return func.HttpResponse(
         portal_path.read_text(encoding="utf-8"),
+        status_code=200,
+        mimetype="text/html",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@app.route(route="resources-data", methods=["GET"])
+def resources_data(req: func.HttpRequest) -> func.HttpResponse:
+    """Return the cached read-only inventory of deployed Azure components."""
+    del req
+    try:
+        payload = _resource_inventory_payload()
+    except (KeyError, RuntimeError) as error:
+        logger.exception("Azure component inventory query failed.")
+        return _json_response({"error": str(error)}, status_code=502)
+
+    response = _json_response(payload)
+    response.headers["Cache-Control"] = "public, max-age=300"
+    return response
+
+
+@app.route(route="resources", methods=["GET"])
+def resources(req: func.HttpRequest) -> func.HttpResponse:
+    """Serve the public Azure component inventory dashboard."""
+    del req
+    resources_path = Path(__file__).parent / "portal" / "resources.html"
+    return func.HttpResponse(
+        resources_path.read_text(encoding="utf-8"),
         status_code=200,
         mimetype="text/html",
         headers={"Cache-Control": "public, max-age=300"},
