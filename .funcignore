@@ -1,0 +1,16 @@
+.git/
+.github/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+dashboards/
+docs/
+infra/
+scripts/
+tests/
+.gitignore
+deployment-output.json
+local.settings.json
+pyproject.toml
+README.md

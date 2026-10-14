@@ -1,0 +1,9 @@
+.azure/
+.azure-cli-extensions/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+*.pyc
+local.settings.json
+deployment-output.json

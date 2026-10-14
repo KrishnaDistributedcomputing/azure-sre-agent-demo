@@ -1,0 +1,2 @@
+azure-functions==1.24.0
+azure-storage-queue==12.14.1

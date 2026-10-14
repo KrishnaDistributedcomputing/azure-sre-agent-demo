@@ -1,0 +1,138 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Azure SRE Agent demo dashboard\n\nUse this workbook to validate all ten controlled incident scenarios. Select a time range, run scenarios with `scripts/Invoke-Scenario.ps1`, and refresh the workbook."
+      },
+      "name": "overview"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "time-range",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 86400000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 604800000
+                }
+              ]
+            },
+            "label": "Time range"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "traces\n| where timestamp {TimeRange}\n| where message has '\"eventType\":\"sre-demo-scenario\"'\n| extend event = parse_json(message)\n| summarize Signals=count(), Critical=countif(toint(event.severity) == 1), Warning=countif(toint(event.severity) == 2), UniqueScenarios=dcount(tostring(event.scenario))",
+        "size": 4,
+        "title": "Reliability scorecard",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "crossComponentResources": [
+          "__APP_INSIGHTS_ID__"
+        ],
+        "visualization": "tiles"
+      },
+      "name": "scorecard"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "traces\n| where timestamp {TimeRange}\n| where message has '\"eventType\":\"sre-demo-scenario\"'\n| extend event = parse_json(message)\n| summarize Count=count() by Scenario=tostring(event.scenario), Severity=toint(event.severity)\n| order by Count desc",
+        "size": 0,
+        "title": "Scenario signals",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "crossComponentResources": [
+          "__APP_INSIGHTS_ID__"
+        ],
+        "visualization": "bar"
+      },
+      "name": "scenario-signals"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp {TimeRange}\n| summarize Requests=count(), Failures=countif(success == false), P50=percentile(duration, 50), P95=percentile(duration, 95), P99=percentile(duration, 99) by bin(timestamp, 5m)\n| order by timestamp asc",
+        "size": 0,
+        "title": "Request volume, failures, and latency",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "crossComponentResources": [
+          "__APP_INSIGHTS_ID__"
+        ],
+        "visualization": "timechart"
+      },
+      "name": "request-health"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "traces\n| where timestamp {TimeRange}\n| where message has '\"eventType\":\"sre-demo-scenario\"'\n| extend event = parse_json(message)\n| project timestamp, Scenario=tostring(event.scenario), Severity=toint(event.severity), Status=toint(event.status_code), DurationMs=toint(event.duration_ms), Items=toint(event.item_count), Summary=tostring(event.summary), RootCause=tostring(event.expected_root_cause), CorrelationId=tostring(event.correlationId)\n| order by timestamp desc",
+        "size": 0,
+        "title": "Incident evidence and expected root causes",
+        "timeContext": {
+          "durationMs": 86400000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "crossComponentResources": [
+          "__APP_INSIGHTS_ID__"
+        ],
+        "visualization": "table"
+      },
+      "name": "incident-evidence"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Cost guardrails\n\nThe demo uses one Consumption Function App, one Standard LRS storage account, 0.1 GB/day Log Analytics ingestion cap, one scheduled-query alert, and one shared SRE Agent. The day-29 Logic App deletes the demo and SRE Agent resource groups before fixed SRE Agent billing begins."
+      },
+      "name": "cost-guardrails"
+    }
+  ],
+  "fallbackResourceIds": [
+    "__APP_INSIGHTS_ID__"
+  ],
+  "fromTemplateId": "azure-sre-agent-demo"
+}
