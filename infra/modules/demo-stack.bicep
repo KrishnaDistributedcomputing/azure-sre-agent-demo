@@ -387,6 +387,9 @@ output resourceDashboardUrl string = 'https://${functionApp.properties.defaultHo
 @description('Public no-login evaluation cost planner URL.')
 output costPlannerUrl string = 'https://${functionApp.properties.defaultHostName}/api/cost'
 
+@description('Public no-login partner governance requirements URL.')
+output partnerGovernanceUrl string = 'https://${functionApp.properties.defaultHostName}/api/partner'
+
 @description('Log Analytics workspace resource ID.')
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
 

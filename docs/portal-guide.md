@@ -19,11 +19,12 @@ operational decisions, recovery actions, and cost controls. It is designed for
 business leaders, service owners, SRE teams, application engineers, and
 governance stakeholders.
 
-The experience has three pages:
+The experience has four pages:
 
 * [Reliability dashboard](https://sredemo-be3wpifmuf.azurewebsites.net/api/portal)
 * [Evaluation cost planner](https://sredemo-be3wpifmuf.azurewebsites.net/api/cost)
 * [Azure component command center](https://sredemo-be3wpifmuf.azurewebsites.net/api/resources)
+* [Partner governance command center](https://sredemo-be3wpifmuf.azurewebsites.net/api/partner)
 
 None of the pages requires a browser login. The reliability API queries the demo Log
 Analytics workspace through the Function App managed identity. The cost planner
@@ -32,6 +33,11 @@ uses documented planning assumptions and does not query Azure billing data.
 The component command center queries Azure Resource Graph every five minutes.
 The Function App managed identity has Reader access only on the demo, SRE Agent,
 and guardrail resource groups.
+
+The partner governance command center presents the mandatory customer
+engagement, technical decision, implementation, security, cost, operations,
+handover, acceptance, and exception requirements. It includes the evidence
+baseline for all 19 top-level and supporting Azure components.
 
 > [!IMPORTANT]
 > Every incident displayed by the portal is a controlled simulation. Do not

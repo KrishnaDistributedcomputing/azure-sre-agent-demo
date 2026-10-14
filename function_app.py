@@ -740,6 +740,19 @@ def resources(req: func.HttpRequest) -> func.HttpResponse:
     )
 
 
+@app.route(route="partner", methods=["GET"])
+def partner(req: func.HttpRequest) -> func.HttpResponse:
+    """Serve the public partner governance and implementation requirements."""
+    del req
+    partner_path = Path(__file__).parent / "portal" / "partner.html"
+    return func.HttpResponse(
+        partner_path.read_text(encoding="utf-8"),
+        status_code=200,
+        mimetype="text/html",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
 @app.route(route="cost", methods=["GET"])
 def cost(req: func.HttpRequest) -> func.HttpResponse:
     """Serve the public evaluation cost-planning page."""

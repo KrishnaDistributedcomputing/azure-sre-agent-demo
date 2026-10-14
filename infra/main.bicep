@@ -219,6 +219,9 @@ output resourceDashboardUrl string = demoStack.outputs.resourceDashboardUrl
 @description('Public no-login evaluation cost planner URL.')
 output costPlannerUrl string = demoStack.outputs.costPlannerUrl
 
+@description('Public no-login partner governance requirements URL.')
+output partnerGovernanceUrl string = demoStack.outputs.partnerGovernanceUrl
+
 @description('Function App name for code deployment.')
 output functionAppName string = demoStack.outputs.functionAppName
 

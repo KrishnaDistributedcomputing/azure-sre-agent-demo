@@ -123,6 +123,11 @@ as the mandatory baseline for partner-led customer interactions, technical
 decisions, implementation evidence, security, cost governance, operational
 handover, and acceptance.
 
+Present the same requirements through the public Partner Governance command
+center:
+
+<https://sredemo-be3wpifmuf.azurewebsites.net/api/partner>
+
 The managed identity has Log Analytics Reader access only on the demo workspace.
 The API caches query results for 60 seconds to limit query volume and cost.
 

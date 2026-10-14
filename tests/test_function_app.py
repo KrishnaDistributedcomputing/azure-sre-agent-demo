@@ -123,3 +123,11 @@ def test_resource_dashboard_is_available_without_authentication() -> None:
     assert response.status_code == 200
     assert response.mimetype == "text/html"
     assert b"Azure component command center" in response.get_body()
+
+
+def test_partner_requirements_page_is_available_without_authentication() -> None:
+    response = function_app.partner(MagicMock())
+
+    assert response.status_code == 200
+    assert response.mimetype == "text/html"
+    assert b"Partner governance command center" in response.get_body()
