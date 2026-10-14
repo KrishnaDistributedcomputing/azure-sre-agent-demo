@@ -149,7 +149,7 @@
     </div>
 
     <section class="metrics" aria-label="Partner governance summary">
-      <article class="metric"><span>Azure components</span><strong>19</strong><small>15 top-level and 4 supporting</small></article>
+      <article class="metric"><span>Azure components</span><strong>23</strong><small>19 top-level and 4 supporting</small></article>
       <article class="metric"><span>Resource groups</span><strong>3</strong><small>Agent, demo, and guardrails</small></article>
       <article class="metric"><span>Required deliverables</span><strong>12</strong><small>Maintained through the engagement</small></article>
       <article class="metric"><span>Acceptance gates</span><strong>11</strong><small>Required before completion</small></article>
@@ -203,7 +203,7 @@
       </div>
 
       <div class="group-block">
-        <div class="group-title"><h3>rg-sre-demo</h3><span>9 top-level resources</span></div>
+        <div class="group-title"><h3>rg-sre-demo</h3><span>11 top-level resources</span></div>
         <div class="table-wrap"><table>
           <thead><tr><th>Resource</th><th>Azure type</th><th>Purpose</th><th>Required partner evidence</th></tr></thead>
           <tbody>
@@ -215,16 +215,22 @@
             <tr class="component-row"><td><code>appi-sredemo-be3wpifmuf</code></td><td>Application Insights</td><td>Collects request, exception, and dependency telemetry</td><td>Workspace linkage, sampling, scenario evidence, and availability check</td></tr>
             <tr class="component-row"><td><code>ag-sre-demo</code></td><td>Azure Monitor action group</td><td>Routes reliability notifications</td><td>Recipient approval, notification test, ownership, and escalation procedure</td></tr>
             <tr class="component-row"><td><code>alert-sre-demo-severity</code></td><td>Scheduled query alert</td><td>Detects severity 1 and 2 signals</td><td>Query, threshold, evaluation period, action, test, and false-positive review</td></tr>
+            <tr class="component-row"><td><code>alert-sre-demo-http-failures</code></td><td>Metric alert</td><td>Detects failed customer-facing HTTP requests</td><td>Metric, threshold, evaluation period, action group, test response, and recovery validation</td></tr>
+            <tr class="component-row"><td><code>webtest-sre-demo-health</code></td><td>Standard availability test</td><td>Checks the public health endpoint every five minutes</td><td>Endpoint, test location, frequency, timeout, TLS validation, and failure response</td></tr>
             <tr class="component-row"><td><code>92c9fbfb-f80a-5eb6-8348-db0150007740</code></td><td>Azure Monitor workbook</td><td>Provides the Azure dashboard</td><td>Audience, queries, time range, expected visuals, access path, and review result</td></tr>
           </tbody>
         </table></div>
       </div>
 
       <div class="group-block">
-        <div class="group-title"><h3>rg-sre-guardrails</h3><span>1 top-level resource</span></div>
+        <div class="group-title"><h3>rg-sre-guardrails</h3><span>3 top-level resources</span></div>
         <div class="table-wrap"><table>
           <thead><tr><th>Resource</th><th>Azure type</th><th>Purpose</th><th>Required partner evidence</th></tr></thead>
-          <tbody><tr class="component-row"><td><code>logic-sre-demo-day-29-teardown</code></td><td>Logic App workflow</td><td>Deletes evaluation resources before fixed billing</td><td>Trigger time, targets, identity, permissions, test evidence, owner, and manual fallback</td></tr></tbody>
+          <tbody>
+            <tr class="component-row"><td><code>logic-sre-demo-day-29-teardown</code></td><td>Logic App workflow</td><td>Deletes evaluation resources before fixed billing</td><td>Trigger time, targets, identity, permissions, test evidence, owner, and manual fallback</td></tr>
+            <tr class="component-row"><td><code>alert-sre-demo-service-health</code></td><td>Activity Log alert</td><td>Notifies owners about Azure incidents and planned events</td><td>Incident types, subscription scope, action group, notification test, owner, and escalation procedure</td></tr>
+            <tr class="component-row"><td><code>alert-sre-demo-resource-health</code></td><td>Activity Log alert</td><td>Detects degraded or unavailable Azure resources</td><td>Health states, subscription scope, action group, test plan, owner, and recovery procedure</td></tr>
+          </tbody>
         </table></div>
       </div>
 

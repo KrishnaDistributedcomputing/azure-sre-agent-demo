@@ -15,7 +15,7 @@ across ten controlled failure modes.
 > [!WARNING]
 > Azure SRE Agent costs about $292 per month in fixed always-on charges after the
 > 30-day new-customer trial, before active usage. This deployment schedules
-> deletion of the agent and demo resource groups on day 29. Verify the teardown
+> deletion of the agent, demo, and guardrail resource groups on day 29. Verify the teardown
 > workflow and delete the agent manually if the workflow is disabled or fails.
 
 ## Architecture
@@ -40,9 +40,10 @@ Cost controls include:
 
 * $100 monthly Azure Cost Management budget
 * 0.1 GB/day Log Analytics ingestion cap
-* One alert rule shared by all scenarios
+* Four alert rules covering scenario, HTTP failure, Service Health, and Resource Health signals
+* One external availability test running every five minutes
 * One Function App on the Consumption plan
-* Day-29 automatic deletion of the SRE Agent and demo workload
+* Day-29 automatic deletion of the SRE Agent, demo workload, and guardrails
 * Recommended 500-AAU active-flow allocation in SRE Agent settings
 
 ## Deploy
@@ -127,6 +128,10 @@ Present the same requirements through the public Partner Governance command
 center:
 
 <https://sredemo-be3wpifmuf.azurewebsites.net/api/partner>
+
+See the [Operational Readiness Pack](docs/operational-readiness.md) for the
+availability test, platform health alerts, HTTP failure alert, Function health
+check, revised cost assumptions, validation, response, and teardown guidance.
 
 The managed identity has Log Analytics Reader access only on the demo workspace.
 The API caches query results for 60 seconds to limit query volume and cost.

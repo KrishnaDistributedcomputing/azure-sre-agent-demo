@@ -31,7 +31,7 @@ approved it, and what remains open.
 
 ## Deployed Azure component baseline
 
-The current evaluation contains 15 top-level Azure resources across three
+The current evaluation contains 19 top-level Azure resources across three
 resource groups. Four supporting or child components complete the deployment.
 
 The partner must confirm this baseline before each engagement. Any addition,
@@ -64,6 +64,8 @@ Resource group: `rg-sre-demo`
 | `appi-sredemo-be3wpifmuf` | `Microsoft.Insights/components` | Collects request, exception, and dependency telemetry | Workspace linkage, sampling decision, scenario evidence, and availability check |
 | `ag-sre-demo` | `Microsoft.Insights/actionGroups` | Routes reliability notifications | Recipient approval, notification test, ownership, and escalation procedure |
 | `alert-sre-demo-severity` | `Microsoft.Insights/scheduledQueryRules` | Detects controlled severity 1 and 2 signals | Query, threshold, evaluation period, action, test result, and false-positive review |
+| `alert-sre-demo-http-failures` | `Microsoft.Insights/metricAlerts` | Detects failed customer-facing HTTP requests | Metric, threshold, evaluation period, action group, test response, and recovery validation |
+| `webtest-sre-demo-health` | `Microsoft.Insights/webtests` | Checks the public health endpoint every five minutes | Endpoint, test location, frequency, timeout, TLS validation, and failure response |
 | `92c9fbfb-f80a-5eb6-8348-db0150007740` | `Microsoft.Insights/workbooks` | Provides the Azure Monitor dashboard | Audience, queries, time range, expected visuals, access path, and review result |
 
 ### Guardrail resource group
@@ -73,6 +75,8 @@ Resource group: `rg-sre-guardrails`
 | Resource | Azure type | Purpose | Required partner evidence |
 |----------|------------|---------|---------------------------|
 | `logic-sre-demo-day-29-teardown` | `Microsoft.Logic/workflows` | Deletes evaluation resource groups before fixed Agent billing begins | Trigger time, target scopes, identity, permissions, test evidence, owner, and manual fallback |
+| `alert-sre-demo-service-health` | `Microsoft.Insights/activityLogAlerts` | Notifies owners about Azure incidents and planned events | Incident types, subscription scope, action group, notification test, owner, and escalation procedure |
+| `alert-sre-demo-resource-health` | `Microsoft.Insights/activityLogAlerts` | Detects degraded or unavailable Azure resources | Health states, subscription scope, action group, test plan, owner, and recovery procedure |
 
 ### Subscription and child components
 

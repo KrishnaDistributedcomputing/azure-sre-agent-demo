@@ -288,6 +288,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       }
     }
     siteConfig: {
+      healthCheckPath: '/api/health'
       appSettings: [
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -342,6 +343,85 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   ]
 }
 
+/*
+ * Operational readiness
+ */
+
+resource healthAvailabilityTest 'Microsoft.Insights/webtests@2022-06-15' = {
+  name: 'webtest-sre-demo-health'
+  location: location
+  kind: 'standard'
+  tags: union(tags, {
+    'hidden-link:${applicationInsights.id}': 'Resource'
+  })
+  properties: {
+    SyntheticMonitorId: 'webtest-sre-demo-health'
+    Name: 'SRE demo public health'
+    Description: 'Validates the public Function health endpoint every five minutes.'
+    Enabled: true
+    Frequency: 300
+    Timeout: 30
+    Kind: 'standard'
+    RetryEnabled: true
+    Locations: [
+      {
+        Id: 'us-ca-sjc-azr'
+      }
+    ]
+    Request: {
+      RequestUrl: 'https://${functionApp.properties.defaultHostName}/api/health'
+      HttpVerb: 'GET'
+      ParseDependentRequests: false
+      FollowRedirects: true
+    }
+    ValidationRules: {
+      ExpectedHttpStatusCode: 200
+      IgnoreHttpStatusCode: false
+      SSLCheck: true
+      SSLCertRemainingLifetimeCheck: 7
+    }
+  }
+}
+
+resource functionFailureAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: 'alert-sre-demo-http-failures'
+  location: 'global'
+  tags: tags
+  properties: {
+    actions: [
+      {
+        actionGroupId: actionGroup.id
+      }
+    ]
+    autoMitigate: true
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          criterionType: 'StaticThresholdCriterion'
+          metricName: 'requests/failed'
+          metricNamespace: 'microsoft.insights/components'
+          name: 'FailedRequestsTotal'
+          operator: 'GreaterThan'
+          skipMetricValidation: false
+          threshold: 0
+          timeAggregation: 'Count'
+        }
+      ]
+    }
+    description: 'Detects failed customer-facing HTTP requests recorded by Application Insights.'
+    enabled: true
+    evaluationFrequency: 'PT5M'
+    scopes: [
+      applicationInsights.id
+    ]
+    severity: 2
+    targetResourceRegion: location
+    targetResourceType: 'microsoft.insights/components'
+    windowSize: 'PT5M'
+  }
+}
+
 resource functionTelemetryRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(logAnalyticsWorkspace.id, functionApp.id, logAnalyticsReaderRoleDefinitionId)
   scope: logAnalyticsWorkspace
@@ -368,6 +448,9 @@ resource deploymentIdentityTelemetryRole 'Microsoft.Authorization/roleAssignment
 
 @description('Application Insights resource ID.')
 output applicationInsightsId string = applicationInsights.id
+
+@description('Action group resource ID used by reliability and platform alerts.')
+output actionGroupId string = actionGroup.id
 
 @description('Function App host name.')
 output functionAppHostName string = functionApp.properties.defaultHostName

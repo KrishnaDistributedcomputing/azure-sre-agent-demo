@@ -37,7 +37,7 @@ and guardrail resource groups.
 The partner governance command center presents the mandatory customer
 engagement, technical decision, implementation, security, cost, operations,
 handover, acceptance, and exception requirements. It includes the evidence
-baseline for all 19 top-level and supporting Azure components.
+baseline for all 23 top-level and supporting Azure components.
 
 > [!IMPORTANT]
 > Every incident displayed by the portal is a controlled simulation. Do not
@@ -181,9 +181,9 @@ billable.
 The default planning case uses:
 
 * 500 active-flow AAUs at $0.10 per AAU, estimated at $50
-* $5 for low-volume serverless demo infrastructure
+* $7 for low-volume serverless and operational-readiness infrastructure
 * $0 fixed SRE Agent charge during the eligible trial
-* $55 estimated evaluation total
+* $57 estimated evaluation total
 
 ### Post-trial estimate
 
@@ -193,8 +193,8 @@ The fixed planning estimate is:
 4 AAUs/hour x $0.10/AAU x 730 hours/month = approximately $292/month
 ```
 
-With 500 active-flow AAUs and $5 of supporting infrastructure, the default
-post-trial estimate becomes approximately $347 per month.
+With 500 active-flow AAUs and $7 of supporting infrastructure, the default
+post-trial estimate becomes approximately $349 per month.
 
 > [!WARNING]
 > The $100 target does not support an always-on SRE Agent after the trial under
@@ -223,6 +223,10 @@ Pricing may vary because of:
 * Future Azure pricing changes
 
 Validate approval figures in Azure pricing resources and Cost Management.
+
+The [Operational Readiness Pack](operational-readiness.md) documents the
+availability test, HTTP failure alert, Service Health alert, Resource Health
+alert, validation procedure, response ownership, and revised cost boundary.
 
 ## Azure component command center
 

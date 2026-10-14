@@ -144,8 +144,10 @@ module demoStack 'modules/demo-stack.bicep' = {
 module guardrails 'modules/guardrails.bicep' = {
   scope: guardrailResourceGroup
   params: {
+    actionGroupId: demoStack.outputs.actionGroupId
     agentResourceGroupName: agentResourceGroupName
     demoResourceGroupName: demoResourceGroupName
+    guardrailResourceGroupName: guardrailResourceGroupName
     location: location
     tags: commonTags
     teardownUtc: teardownUtc
@@ -166,6 +168,14 @@ module guardrailAgentRole 'modules/role-assignment.bicep' = {
 
 module guardrailDemoRole 'modules/role-assignment.bicep' = {
   scope: demoResourceGroup
+  params: {
+    principalId: guardrails.outputs.principalId
+    roleDefinitionId: contributorRoleDefinitionId
+  }
+}
+
+module guardrailGuardrailRole 'modules/role-assignment.bicep' = {
+  scope: guardrailResourceGroup
   params: {
     principalId: guardrails.outputs.principalId
     roleDefinitionId: contributorRoleDefinitionId

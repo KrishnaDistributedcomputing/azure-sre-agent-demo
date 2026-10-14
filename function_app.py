@@ -53,6 +53,10 @@ RESOURCE_METADATA = {
         "Alerting",
         "Routes reliability notifications to the demo owner.",
     ),
+    "microsoft.insights/activitylogalerts": (
+        "Platform health",
+        "Monitors Azure Service Health and Resource Health events.",
+    ),
     "microsoft.insights/components": (
         "Observability",
         "Application Insights collects request, exception, and dependency telemetry.",
@@ -60,6 +64,14 @@ RESOURCE_METADATA = {
     "microsoft.insights/scheduledqueryrules": (
         "Alerting",
         "Detects controlled severity 1 and severity 2 scenario signals.",
+    ),
+    "microsoft.insights/metricalerts": (
+        "Alerting",
+        "Detects failed customer-facing HTTP requests in Application Insights.",
+    ),
+    "microsoft.insights/webtests": (
+        "Customer assurance",
+        "Checks the public application health endpoint every five minutes.",
     ),
     "microsoft.insights/workbooks": (
         "Visualization",
@@ -94,8 +106,11 @@ RESOURCE_METADATA = {
 RESOURCE_TYPE_LABELS = {
     "microsoft.app/agents": "Azure SRE Agent",
     "microsoft.insights/actiongroups": "Azure Monitor Action Group",
+    "microsoft.insights/activitylogalerts": "Activity Log Alert",
     "microsoft.insights/components": "Application Insights",
+    "microsoft.insights/metricalerts": "Metric Alert",
     "microsoft.insights/scheduledqueryrules": "Scheduled Query Alert",
+    "microsoft.insights/webtests": "Standard Availability Test",
     "microsoft.insights/workbooks": "Azure Monitor Workbook",
     "microsoft.logic/workflows": "Logic App Workflow",
     "microsoft.managedidentity/userassignedidentities": "User-Assigned Managed Identity",
