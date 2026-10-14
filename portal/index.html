@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Live, public Azure SRE Agent reliability showcase">
+  <title>Azure SRE Agent Reliability Showcase</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #06111f;
+      --panel: rgba(12, 31, 51, 0.9);
+      --panel-2: #102b44;
+      --line: #234b68;
+      --text: #ecf7ff;
+      --muted: #9bb5c8;
+      --cyan: #42d9ff;
+      --blue: #5f8cff;
+      --green: #4ee1a0;
+      --amber: #ffbf5a;
+      --red: #ff6f7d;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(66, 217, 255, 0.16), transparent 30rem),
+        radial-gradient(circle at 88% 2%, rgba(95, 140, 255, 0.17), transparent 34rem),
+        linear-gradient(150deg, #071321 0%, #06111f 45%, #081a2d 100%);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.18;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(to bottom, black, transparent 75%);
+    }
+    .shell { width: min(1480px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 48px; }
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 26px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 6px rgba(78,225,160,.12); }
+    h1 { max-width: 840px; margin: 12px 0 10px; font-size: clamp(32px, 5vw, 62px); line-height: .98; letter-spacing: -.045em; }
+    .lede { max-width: 760px; margin: 0; color: var(--muted); font-size: 17px; line-height: 1.6; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+    select, button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(10, 29, 48, .88);
+      color: var(--text);
+      padding: 11px 14px;
+      font: inherit;
+    }
+    button { cursor: pointer; font-weight: 750; }
+    button:hover { border-color: var(--cyan); transform: translateY(-1px); }
+    .status {
+      display: none;
+      margin-bottom: 18px;
+      padding: 12px 15px;
+      border: 1px solid rgba(255,111,125,.5);
+      border-radius: 10px;
+      color: #ffd7db;
+      background: rgba(91, 24, 37, .62);
+    }
+    .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .metric, .panel {
+      border: 1px solid rgba(89, 151, 190, .24);
+      background: linear-gradient(145deg, rgba(18, 47, 73, .88), rgba(8, 27, 44, .92));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+    .metric { min-height: 132px; padding: 18px; border-radius: 14px; position: relative; overflow: hidden; }
+    .metric::after { content: ""; position: absolute; width: 70px; height: 70px; right: -20px; top: -20px; border-radius: 50%; background: var(--accent, var(--cyan)); opacity: .12; filter: blur(2px); }
+    .metric .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+    .metric .value { margin-top: 16px; font-size: 34px; font-weight: 850; letter-spacing: -.04em; }
+    .metric .hint { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .grid { display: grid; grid-template-columns: 1.05fr 1.95fr; gap: 18px; margin-bottom: 18px; }
+    .panel { border-radius: 16px; padding: 20px; min-width: 0; }
+    .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 16px; }
+    h2 { margin: 0; font-size: 18px; letter-spacing: -.015em; }
+    .panel-note { color: var(--muted); font-size: 12px; }
+    .scenario-list { display: grid; gap: 10px; }
+    .scenario {
+      display: grid;
+      grid-template-columns: minmax(130px, 1fr) 2fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+    .scenario-name { font-size: 13px; font-weight: 700; }
+    .bar-track { height: 9px; overflow: hidden; border-radius: 999px; background: #071724; }
+    .bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--cyan)); min-width: 3px; }
+    .badge { min-width: 74px; padding: 5px 8px; border-radius: 999px; text-align: center; text-transform: uppercase; font-size: 10px; letter-spacing: .08em; font-weight: 850; }
+    .critical { color: #ffd8dc; background: rgba(255,111,125,.18); }
+    .warning { color: #ffe6b6; background: rgba(255,191,90,.17); }
+    .observed { color: #c9ffe8; background: rgba(78,225,160,.16); }
+    .not-run { color: var(--muted); background: rgba(155,181,200,.12); }
+    #trend { width: 100%; min-height: 300px; display: block; }
+    .axis-label { fill: var(--muted); font-size: 10px; }
+    .legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 3px; background: var(--legend); }
+    .guardrails { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .guardrail { padding: 14px; border-radius: 12px; background: rgba(5, 20, 34, .58); border: 1px solid rgba(89,151,190,.18); }
+    .guardrail strong { display: block; font-size: 18px; margin-bottom: 5px; }
+    .guardrail span { color: var(--muted); font-size: 12px; }
+    .table-wrap { overflow: auto; max-height: 520px; border: 1px solid rgba(89,151,190,.18); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; min-width: 1120px; }
+    th { position: sticky; top: 0; z-index: 1; padding: 12px; text-align: left; background: #102a42; color: #b9d4e6; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+    td { padding: 12px; border-top: 1px solid rgba(89,151,190,.13); color: #d8e8f3; font-size: 12px; vertical-align: top; }
+    tbody tr:hover { background: rgba(66,217,255,.045); }
+    .root { max-width: 300px; color: var(--muted); }
+    footer { display: flex; justify-content: space-between; gap: 20px; margin-top: 18px; color: var(--muted); font-size: 12px; }
+    .loading .metric .value, .loading .scenario-list, .loading #trend, .loading tbody { opacity: .35; }
+    @media (max-width: 1080px) {
+      .metrics { grid-template-columns: repeat(3, 1fr); }
+      .grid { grid-template-columns: 1fr; }
+      .guardrails { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 680px) {
+      .shell { width: min(100% - 20px, 1480px); padding-top: 20px; }
+      header { display: block; }
+      .controls { margin-top: 20px; justify-content: flex-start; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .metric { min-height: 112px; }
+      .metric .value { font-size: 27px; }
+      .scenario { grid-template-columns: 1fr auto; }
+      .bar-track { grid-column: 1 / -1; }
+      .guardrails { grid-template-columns: 1fr; }
+      footer { display: block; }
+    }
+  </style>
+</head>
+<body class="loading">
+  <main class="shell">
+    <header>
+      <div>
+        <div class="eyebrow"><span class="pulse"></span> Live Azure telemetry</div>
+        <h1>Reliability under controlled pressure.</h1>
+        <p class="lede">A public, no-login view of ten deterministic Azure SRE scenarios, their operational signals, expected root causes, and the guardrails keeping this evaluation below budget.</p>
+      </div>
+      <div class="controls">
+        <label>
+          <span class="panel-note">Time range</span><br>
+          <select id="range" aria-label="Time range">
+            <option value="1">Last hour</option>
+            <option value="4">Last 4 hours</option>
+            <option value="24" selected>Last 24 hours</option>
+            <option value="168">Last 7 days</option>
+          </select>
+        </label>
+        <button id="refresh" type="button">Refresh now</button>
+      </div>
+    </header>
+
+    <div id="status" class="status" role="alert"></div>
+    <section id="metrics" class="metrics" aria-label="Reliability scorecard"></section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Scenario signals</h2>
+          <span class="panel-note">Runs by scenario</span>
+        </div>
+        <div id="scenarios" class="scenario-list"></div>
+      </article>
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Request volume, failures, and latency</h2>
+          <span class="panel-note">Five-minute intervals</span>
+        </div>
+        <svg id="trend" viewBox="0 0 900 300" role="img" aria-label="Request and latency time series"></svg>
+        <div class="legend">
+          <span style="--legend: var(--cyan)">Requests</span>
+          <span style="--legend: var(--red)">Failures</span>
+          <span style="--legend: var(--amber)">P95 duration</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-bottom:18px">
+      <div class="panel-head">
+        <h2>Cost and evaluation guardrails</h2>
+        <span class="panel-note">Designed for a 30-day trial</span>
+      </div>
+      <div id="guardrails" class="guardrails"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Incident evidence and expected root causes</h2>
+        <span id="evidence-count" class="panel-note"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th><th>Scenario</th><th>Severity</th><th>Status</th>
+              <th>Duration</th><th>Items</th><th>Summary</th><th>Expected root cause</th><th>Correlation ID</th>
+            </tr>
+          </thead>
+          <tbody id="evidence"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      <span id="updated">Waiting for telemetry...</span>
+      <span>Azure Functions · Application Insights · Log Analytics · Azure SRE Agent</span>
+    </footer>
+  </main>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const create = (tag, className, text) => {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    };
+    const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
+    const dateTime = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "medium" });
+
+    function renderMetrics(summary) {
+      const cards = [
+        ["Signals", summary.signals, "Controlled reliability events", "#42d9ff"],
+        ["Critical", summary.critical, "Severity 1", "#ff6f7d"],
+        ["Warnings", summary.warning, "Severity 2", "#ffbf5a"],
+        ["Coverage", `${summary.scenariosObserved}/10`, "Scenarios observed", "#4ee1a0"],
+        ["Requests", summary.requests, `${summary.failures} failed`, "#5f8cff"],
+        ["P95 latency", `${number.format(summary.p95DurationMs)} ms`, "Peak five-minute interval", "#d08cff"]
+      ];
+      const root = $("#metrics");
+      root.replaceChildren(...cards.map(([label, value, hint, accent]) => {
+        const card = create("article", "metric");
+        card.style.setProperty("--accent", accent);
+        card.append(create("div", "label", label), create("div", "value", value), create("div", "hint", hint));
+        return card;
+      }));
+    }
+
+    function renderScenarios(coverage) {
+      const maximum = Math.max(1, ...coverage.map(item => item.count));
+      $("#scenarios").replaceChildren(...coverage.map(item => {
+        const row = create("div", "scenario");
+        row.append(create("div", "scenario-name", item.scenario));
+        const track = create("div", "bar-track");
+        const bar = create("div", "bar");
+        bar.style.width = `${Math.max(3, (item.count / maximum) * 100)}%`;
+        track.append(bar);
+        row.append(track, create("div", `badge ${item.status}`, item.count ? `${item.status} · ${item.count}` : item.status));
+        return row;
+      }));
+    }
+
+    function svgElement(name, attributes = {}) {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+      return node;
+    }
+
+    function renderTrend(series) {
+      const svg = $("#trend");
+      svg.replaceChildren();
+      if (!series.length) {
+        const message = svgElement("text", { x: 450, y: 150, "text-anchor": "middle", class: "axis-label" });
+        message.textContent = "No request telemetry in this time range";
+        svg.append(message);
+        return;
+      }
+      const width = 900, height = 300, left = 48, right = 18, top = 18, bottom = 34;
+      const plotWidth = width - left - right, plotHeight = height - top - bottom;
+      const maxValue = Math.max(1, ...series.flatMap(p => [Number(p.requests || 0), Number(p.failures || 0), Number(p.p95 || 0)]));
+      for (let i = 0; i <= 4; i++) {
+        const y = top + plotHeight * i / 4;
+        svg.append(svgElement("line", { x1: left, x2: width - right, y1: y, y2: y, stroke: "#234b68", "stroke-width": 1 }));
+        const label = svgElement("text", { x: left - 8, y: y + 4, "text-anchor": "end", class: "axis-label" });
+        label.textContent = number.format(maxValue * (1 - i / 4));
+        svg.append(label);
+      }
+      const pathFor = (field) => series.map((point, index) => {
+        const x = left + (series.length === 1 ? plotWidth / 2 : index * plotWidth / (series.length - 1));
+        const y = top + plotHeight - Number(point[field] || 0) / maxValue * plotHeight;
+        return `${index ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+      [["requests", "#42d9ff"], ["failures", "#ff6f7d"], ["p95", "#ffbf5a"]].forEach(([field, color]) => {
+        svg.append(svgElement("path", { d: pathFor(field), fill: "none", stroke: color, "stroke-width": 3, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+      });
+      const first = new Date(series[0].timestamp);
+      const last = new Date(series[series.length - 1].timestamp);
+      [[left, first], [width - right, last]].forEach(([x, value]) => {
+        const label = svgElement("text", { x, y: height - 8, "text-anchor": x === left ? "start" : "end", class: "axis-label" });
+        label.textContent = value.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        svg.append(label);
+      });
+    }
+
+    function renderGuardrails(guardrails) {
+      const values = [
+        [`$${guardrails.monthlyBudgetUsd}`, "Monthly Azure budget"],
+        [`${guardrails.dailyLogCapGb} GB`, "Daily Log Analytics cap"],
+        [`${guardrails.activeFlowAauLimit} AAUs`, "Recommended active-flow cap"],
+        [guardrails.hosting, "Scale-to-zero compute"],
+        [guardrails.teardownUtc ? dateTime.format(new Date(guardrails.teardownUtc)) : "Not set", "Automatic teardown"]
+      ];
+      $("#guardrails").replaceChildren(...values.map(([value, label]) => {
+        const card = create("div", "guardrail");
+        card.append(create("strong", "", value), create("span", "", label));
+        return card;
+      }));
+    }
+
+    function renderEvidence(events) {
+      $("#evidence-count").textContent = `${events.length} latest events`;
+      $("#evidence").replaceChildren(...events.map(event => {
+        const row = document.createElement("tr");
+        const values = [
+          dateTime.format(new Date(event.timestamp)), event.scenario, event.severity,
+          event.statusCode, `${number.format(event.durationMs || 0)} ms`,
+          number.format(event.itemCount || 0), event.summary, event.rootCause, event.correlationId
+        ];
+        values.forEach((value, index) => row.append(create("td", index === 7 ? "root" : "", value)));
+        return row;
+      }));
+    }
+
+    async function loadDashboard() {
+      document.body.classList.add("loading");
+      $("#status").style.display = "none";
+      const hours = $("#range").value;
+      try {
+        const response = await fetch(`./dashboard-data?hours=${hours}`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+        renderMetrics(payload.summary);
+        renderScenarios(payload.coverage);
+        renderTrend(payload.requestSeries);
+        renderGuardrails(payload.guardrails);
+        renderEvidence(payload.evidence);
+        $("#updated").textContent = `Updated ${dateTime.format(new Date(payload.generatedAt))} · auto-refreshes every 60 seconds`;
+      } catch (error) {
+        $("#status").textContent = `Live telemetry is temporarily unavailable: ${error.message}`;
+        $("#status").style.display = "block";
+      } finally {
+        document.body.classList.remove("loading");
+      }
+    }
+
+    $("#refresh").addEventListener("click", loadDashboard);
+    $("#range").addEventListener("change", loadDashboard);
+    loadDashboard();
+    setInterval(loadDashboard, 60000);
+  </script>
+</body>
+</html>

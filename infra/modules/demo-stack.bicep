@@ -17,6 +17,9 @@ param resourcePrefix string
 @description('Tags applied to every supported resource.')
 param tags object
 
+@description('UTC timestamp when the evaluation resources are automatically deleted.')
+param teardownUtc string
+
 /*
  * Variables
  */
@@ -32,6 +35,10 @@ var deploymentContainerName = 'app-package-${take(functionAppName, 32)}'
 var storageBlobDataOwnerRoleDefinitionId = subscriptionResourceId(
   'Microsoft.Authorization/roleDefinitions',
   'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+)
+var logAnalyticsReaderRoleDefinitionId = subscriptionResourceId(
+  'Microsoft.Authorization/roleDefinitions',
+  '73c42c96-874c-492b-b04d-ab87d138a893'
 )
 
 /*
@@ -307,6 +314,14 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
           name: 'SRE_DEMO_RELEASE'
           value: '2026.10-bad'
         }
+        {
+          name: 'SRE_DEMO_TEARDOWN_UTC'
+          value: teardownUtc
+        }
+        {
+          name: 'SRE_DEMO_WORKSPACE_ID'
+          value: logAnalyticsWorkspace.properties.customerId
+        }
       ]
       minTlsVersion: '1.2'
     }
@@ -314,6 +329,26 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   dependsOn: [
     deploymentStorageRole
   ]
+}
+
+resource functionTelemetryRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(logAnalyticsWorkspace.id, functionApp.id, logAnalyticsReaderRoleDefinitionId)
+  scope: logAnalyticsWorkspace
+  properties: {
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: logAnalyticsReaderRoleDefinitionId
+  }
+}
+
+resource deploymentIdentityTelemetryRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(logAnalyticsWorkspace.id, deploymentIdentity.id, logAnalyticsReaderRoleDefinitionId)
+  scope: logAnalyticsWorkspace
+  properties: {
+    principalId: deploymentIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: logAnalyticsReaderRoleDefinitionId
+  }
 }
 
 /*
@@ -328,6 +363,9 @@ output functionAppHostName string = functionApp.properties.defaultHostName
 
 @description('Function App name.')
 output functionAppName string = functionApp.name
+
+@description('Public no-login showcase portal URL.')
+output portalUrl string = 'https://${functionApp.properties.defaultHostName}/api/portal'
 
 @description('Log Analytics workspace resource ID.')
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id

@@ -128,6 +128,7 @@ module demoStack 'modules/demo-stack.bicep' = {
     location: location
     resourcePrefix: 'sredemo'
     tags: commonTags
+    teardownUtc: teardownUtc
   }
 }
 
@@ -171,6 +172,9 @@ output applicationInsightsId string = demoStack.outputs.applicationInsightsId
 
 @description('Function App host name.')
 output functionAppHostName string = demoStack.outputs.functionAppHostName
+
+@description('Public no-login showcase portal URL.')
+output portalUrl string = demoStack.outputs.portalUrl
 
 @description('Function App name for code deployment.')
 output functionAppName string = demoStack.outputs.functionAppName

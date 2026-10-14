@@ -40,3 +40,36 @@ def test_config_drift_reports_unhealthy_setting() -> None:
     assert result.status_code == 503
     assert result.severity == 1
     assert "drifted" in result.summary
+
+
+def test_dashboard_payload_reports_full_scenario_coverage() -> None:
+    events = [
+        {
+            "timestamp": "2026-10-14T13:55:38Z",
+            "scenario": "http-500",
+            "severity": 1,
+            "statusCode": 500,
+            "durationMs": 0,
+            "itemCount": 0,
+            "summary": "Failure",
+            "rootCause": "Simulated exception",
+            "correlationId": "test-id",
+        }
+    ]
+    request_series = [
+        {
+            "timestamp": "2026-10-14T13:55:00Z",
+            "requests": 14,
+            "failures": 1,
+            "p50": 867.0,
+            "p95": 4020.0,
+            "p99": 4020.0,
+        }
+    ]
+
+    payload = function_app._build_dashboard_payload(events, request_series, 24)
+
+    assert payload["summary"]["scenariosObserved"] == 1
+    assert payload["summary"]["p95DurationMs"] == 4020.0
+    assert len(payload["coverage"]) == 10
+    assert payload["coverage"][0]["status"] == "critical"

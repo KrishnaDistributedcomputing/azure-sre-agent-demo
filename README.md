@@ -86,6 +86,20 @@ for expected diagnoses and investigation prompts.
 Create reusable SRE-native dashboards with the prompts in
 [Azure SRE Agent Live Reports](docs/live-reports.md).
 
+## Public showcase portal
+
+The no-login portal queries Log Analytics with the Function App managed identity
+and refreshes every 60 seconds:
+
+<https://sredemo-be3wpifmuf.azurewebsites.net/api/portal>
+
+The public data endpoint supports 1, 4, 24, and 168-hour time ranges:
+
+<https://sredemo-be3wpifmuf.azurewebsites.net/api/dashboard-data?hours=24>
+
+The managed identity has Log Analytics Reader access only on the demo workspace.
+The API caches query results for 60 seconds to limit query volume and cost.
+
 ## Cost boundary
 
 The $100 limit applies only to this 30-day evaluation design. The minimum

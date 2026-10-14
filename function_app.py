@@ -9,17 +9,25 @@ import hashlib
 import json
 import logging
 import os
+import threading
 import time
 import uuid
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 import azure.functions as func
+from azure.identity import DefaultAzureCredential
 from azure.storage.queue import QueueClient
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 logger = logging.getLogger("sre_demo")
+_dashboard_cache: tuple[float, int, dict[str, object]] | None = None
+_dashboard_cache_lock = threading.Lock()
+_credential: DefaultAzureCredential | None = None
 
 SCENARIO_NAMES = (
     "http-500",
@@ -234,6 +242,166 @@ SCENARIOS: dict[str, Callable[[], ScenarioResult]] = {
 }
 
 
+def _logs_credential() -> DefaultAzureCredential:
+    global _credential
+    if _credential is None:
+        _credential = DefaultAzureCredential()
+    return _credential
+
+
+def _query_workspace(query: str) -> list[dict[str, object]]:
+    workspace_id = os.environ["SRE_DEMO_WORKSPACE_ID"]
+    token = _logs_credential().get_token("https://api.loganalytics.io/.default").token
+    request = Request(
+        f"https://api.loganalytics.azure.com/v1/workspaces/{workspace_id}/query",
+        data=json.dumps({"query": query}).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        details = error.read().decode("utf-8", errors="replace")
+        message = f"Log Analytics query failed with HTTP {error.code}: {details}"
+        raise RuntimeError(message) from error
+    except URLError as error:
+        raise RuntimeError(f"Log Analytics query failed: {error.reason}") from error
+
+    tables = payload.get("tables", [])
+    if not tables:
+        return []
+
+    table = tables[0]
+    columns = [column["name"] for column in table["columns"]]
+    return [dict(zip(columns, row, strict=True)) for row in table["rows"]]
+
+
+def _scenario_query(hours: int) -> str:
+    return f"""
+AppTraces
+| where TimeGenerated >= ago({hours}h)
+| where Message has '"eventType":"sre-demo-scenario"'
+| extend event = parse_json(Message)
+| project
+    timestamp=TimeGenerated,
+    scenario=tostring(event.scenario),
+    severity=toint(event.severity),
+    statusCode=toint(event.status_code),
+    durationMs=toint(event.duration_ms),
+    itemCount=toint(event.item_count),
+    summary=tostring(event.summary),
+    rootCause=tostring(event.expected_root_cause),
+    correlationId=tostring(event.correlationId)
+| order by timestamp desc
+"""
+
+
+def _request_query(hours: int) -> str:
+    return f"""
+AppRequests
+| where TimeGenerated >= ago({hours}h)
+| summarize
+    requests=count(),
+    failures=countif(Success == false),
+    p50=percentile(DurationMs, 50),
+    p95=percentile(DurationMs, 95),
+    p99=percentile(DurationMs, 99)
+    by timestamp=bin(TimeGenerated, 5m)
+| order by timestamp asc
+"""
+
+
+def _build_dashboard_payload(
+    events: list[dict[str, object]],
+    request_series: list[dict[str, object]],
+    hours: int,
+) -> dict[str, object]:
+    latest_by_scenario: dict[str, dict[str, object]] = {}
+    counts: dict[str, int] = {}
+    for event in events:
+        scenario = str(event["scenario"])
+        counts[scenario] = counts.get(scenario, 0) + 1
+        latest_by_scenario.setdefault(scenario, event)
+
+    coverage: list[dict[str, object]] = []
+    for scenario in SCENARIO_NAMES:
+        latest = latest_by_scenario.get(scenario)
+        severity = int(latest["severity"]) if latest else 0
+        status = (
+            "critical"
+            if severity == 1
+            else "warning"
+            if severity == 2
+            else "observed"
+            if latest
+            else "not-run"
+        )
+        coverage.append(
+            {
+                "scenario": scenario,
+                "count": counts.get(scenario, 0),
+                "status": status,
+                "latest": latest,
+            }
+        )
+
+    request_count = sum(int(point.get("requests") or 0) for point in request_series)
+    failure_count = sum(int(point.get("failures") or 0) for point in request_series)
+    p95 = max((float(point.get("p95") or 0) for point in request_series), default=0)
+    critical_count = sum(1 for event in events if int(event["severity"]) == 1)
+    warning_count = sum(1 for event in events if int(event["severity"]) == 2)
+
+    return {
+        "generatedAt": datetime.now(UTC).isoformat(),
+        "timeRangeHours": hours,
+        "summary": {
+            "signals": len(events),
+            "critical": critical_count,
+            "warning": warning_count,
+            "scenariosObserved": len(latest_by_scenario),
+            "requests": request_count,
+            "failures": failure_count,
+            "p95DurationMs": round(p95, 1),
+        },
+        "coverage": coverage,
+        "requestSeries": request_series,
+        "evidence": events[:100],
+        "guardrails": {
+            "monthlyBudgetUsd": 100,
+            "dailyLogCapGb": 0.1,
+            "activeFlowAauLimit": 500,
+            "teardownUtc": os.getenv("SRE_DEMO_TEARDOWN_UTC"),
+            "hosting": "Azure Functions Flex Consumption",
+        },
+    }
+
+
+def _dashboard_payload(hours: int) -> dict[str, object]:
+    global _dashboard_cache
+    now = time.monotonic()
+    with _dashboard_cache_lock:
+        if (
+            _dashboard_cache is not None
+            and _dashboard_cache[1] == hours
+            and now - _dashboard_cache[0] < 60
+        ):
+            return _dashboard_cache[2]
+
+    payload = _build_dashboard_payload(
+        _query_workspace(_scenario_query(hours)),
+        _query_workspace(_request_query(hours)),
+        hours,
+    )
+    with _dashboard_cache_lock:
+        _dashboard_cache = (now, hours, payload)
+    return payload
+
+
 @app.route(route="health", methods=["GET"])
 def health(req: func.HttpRequest) -> func.HttpResponse:
     """Return the workload health and available scenarios."""
@@ -281,4 +449,41 @@ def invoke_scenario(req: func.HttpRequest) -> func.HttpResponse:
     return _json_response(
         {"correlationId": correlation_id, **asdict(result)},
         status_code=result.status_code,
+    )
+
+
+@app.route(route="dashboard-data", methods=["GET"])
+def dashboard_data(req: func.HttpRequest) -> func.HttpResponse:
+    """Return cached live telemetry for the public showcase portal."""
+    try:
+        hours = int(req.params.get("hours", "24"))
+    except ValueError:
+        return _json_response({"error": "hours must be an integer."}, status_code=400)
+    if hours not in {1, 4, 24, 168}:
+        return _json_response(
+            {"error": "hours must be one of 1, 4, 24, or 168."},
+            status_code=400,
+        )
+
+    try:
+        payload = _dashboard_payload(hours)
+    except (KeyError, RuntimeError) as error:
+        logger.exception("Dashboard telemetry query failed.")
+        return _json_response({"error": str(error)}, status_code=502)
+
+    response = _json_response(payload)
+    response.headers["Cache-Control"] = "public, max-age=60"
+    return response
+
+
+@app.route(route="portal", methods=["GET"])
+def portal(req: func.HttpRequest) -> func.HttpResponse:
+    """Serve the public no-login reliability showcase."""
+    del req
+    portal_path = Path(__file__).parent / "portal" / "index.html"
+    return func.HttpResponse(
+        portal_path.read_text(encoding="utf-8"),
+        status_code=200,
+        mimetype="text/html",
+        headers={"Cache-Control": "public, max-age=300"},
     )
