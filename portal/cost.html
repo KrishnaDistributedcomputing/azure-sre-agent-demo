@@ -7,16 +7,16 @@
   <title>Azure SRE Agent Evaluation Cost Plan</title>
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #06111f;
-      --panel: #0d2942;
-      --line: #28516e;
-      --text: #edf8ff;
-      --muted: #a5bdcc;
-      --cyan: #42d9ff;
-      --green: #4ee1a0;
-      --amber: #ffbf5a;
-      --red: #ff6f7d;
+      color-scheme: light;
+      --bg: #f3f8fb;
+      --panel: #ffffff;
+      --line: #c6dae6;
+      --text: #102a43;
+      --muted: #597184;
+      --cyan: #007da8;
+      --green: #16835a;
+      --amber: #a86000;
+      --red: #c13d50;
     }
     * { box-sizing: border-box; }
     body {
@@ -24,18 +24,18 @@
       min-height: 100vh;
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at 15% 0, rgba(66,217,255,.16), transparent 28rem), linear-gradient(145deg, #071321, var(--bg));
+      background: radial-gradient(circle at 15% 0, rgba(49,175,214,.18), transparent 28rem), linear-gradient(145deg, #f9fcfe, var(--bg));
     }
     .shell { width: min(1180px, calc(100% - 30px)); margin: 0 auto; padding: 30px 0 50px; }
     nav { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 42px; }
     .brand { color: var(--cyan); font-size: 12px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
-    .nav-link { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: rgba(10,29,48,.88); text-decoration: none; font-size: 13px; font-weight: 750; }
+    .nav-link { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: #fff; text-decoration: none; font-size: 13px; font-weight: 750; }
     .nav-link:hover { border-color: var(--cyan); }
     h1 { max-width: 850px; margin: 0 0 14px; font-size: clamp(34px, 6vw, 64px); line-height: 1; letter-spacing: -.045em; }
     .lede { max-width: 780px; margin: 0 0 28px; color: var(--muted); font-size: 17px; line-height: 1.65; }
-    .notice { margin-bottom: 18px; padding: 14px 16px; border: 1px solid rgba(255,191,90,.36); border-radius: 12px; background: rgba(92,61,14,.28); color: #ffe8bc; font-size: 13px; line-height: 1.55; }
+    .notice { margin-bottom: 18px; padding: 14px 16px; border: 1px solid #e8c982; border-radius: 12px; background: #fff7e5; color: #684500; font-size: 13px; line-height: 1.55; }
     .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px; }
-    .panel { padding: 22px; border: 1px solid rgba(89,151,190,.25); border-radius: 16px; background: linear-gradient(145deg, rgba(18,47,73,.94), rgba(8,27,44,.96)); box-shadow: 0 24px 65px rgba(0,0,0,.28); }
+    .panel { padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(145deg, #fff, #f7fbfd); box-shadow: 0 18px 48px rgba(38,77,102,.13); }
     .panel h2 { margin: 0 0 6px; font-size: 20px; }
     .panel-note { margin: 0 0 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
     .phase { position: relative; overflow: hidden; }
@@ -46,7 +46,7 @@
     .formula { color: var(--muted); font-size: 12px; }
     .breakdown { display: grid; gap: 11px; margin-top: 20px; }
     .cost-row { display: grid; grid-template-columns: 155px 1fr auto; align-items: center; gap: 12px; font-size: 12px; }
-    .track { height: 10px; overflow: hidden; border-radius: 999px; background: #061724; }
+    .track { height: 10px; overflow: hidden; border-radius: 999px; background: #dceaf1; }
     .bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--cyan), #668cff); }
     .amount { min-width: 58px; text-align: right; font-weight: 800; }
     label { display: block; margin-bottom: 20px; }
@@ -56,17 +56,17 @@
     .total span { color: var(--muted); font-size: 12px; }
     .total strong { font-size: 34px; }
     .budget { margin-top: 12px; padding: 11px 13px; border-radius: 10px; font-size: 12px; }
-    .budget.good { color: #caffdf; background: rgba(41,128,86,.24); }
-    .budget.over { color: #ffd7db; background: rgba(133,38,55,.28); }
+    .budget.good { color: #176242; background: #e4f6ed; }
+    .budget.over { color: #8e2636; background: #fde9ec; }
     .guardrails { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-    .guardrail { padding: 16px; border-radius: 12px; background: rgba(5,20,34,.56); border: 1px solid rgba(89,151,190,.18); }
+    .guardrail { padding: 16px; border-radius: 12px; background: #f3f8fb; border: 1px solid var(--line); }
     .guardrail strong { display: block; margin-bottom: 7px; color: var(--green); font-size: 18px; }
     .guardrail span { color: var(--muted); font-size: 11px; line-height: 1.5; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { padding: 12px; border-top: 1px solid rgba(89,151,190,.17); text-align: left; font-size: 12px; vertical-align: top; }
+    th, td { padding: 12px; border-top: 1px solid #dce8ee; text-align: left; font-size: 12px; vertical-align: top; }
     th { color: var(--cyan); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
-    td { color: #d9eaf4; }
-    .actions { margin: 0; padding-left: 18px; color: #d9eaf4; font-size: 13px; line-height: 1.8; }
+    td { color: #29495c; }
+    .actions { margin: 0; padding-left: 18px; color: #29495c; font-size: 13px; line-height: 1.8; }
     footer { margin-top: 20px; color: var(--muted); font-size: 11px; line-height: 1.55; }
     @media (max-width: 780px) {
       .grid, .guardrails { grid-template-columns: 1fr; }
