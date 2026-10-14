@@ -97,19 +97,50 @@
     .metric .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
     .metric .value { margin-top: 16px; font-size: 34px; font-weight: 850; letter-spacing: -.04em; }
     .metric .hint { margin-top: 4px; color: var(--muted); font-size: 12px; }
-    .grid { display: grid; grid-template-columns: 1.05fr 1.95fr; gap: 18px; margin-bottom: 18px; }
+    .grid { display: grid; grid-template-columns: .8fr 2.2fr; gap: 18px; margin-bottom: 18px; }
     .panel { border-radius: 16px; padding: 20px; min-width: 0; }
     .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 16px; }
     h2 { margin: 0; font-size: 18px; letter-spacing: -.015em; }
     .panel-note { color: var(--muted); font-size: 12px; }
-    .scenario-list { display: grid; gap: 10px; }
-    .scenario {
+    .incident-mix { display: grid; place-items: center; min-height: 250px; }
+    .donut {
+      width: 180px;
+      aspect-ratio: 1;
       display: grid;
-      grid-template-columns: minmax(130px, 1fr) 2fr auto;
-      align-items: center;
-      gap: 12px;
+      place-items: center;
+      border-radius: 50%;
+      background: conic-gradient(var(--red) 0 var(--critical-angle, 0deg), var(--amber) var(--critical-angle, 0deg) var(--observed-angle, 0deg), #17354c var(--observed-angle, 0deg));
+      box-shadow: 0 0 60px rgba(66,217,255,.12);
+      position: relative;
     }
-    .scenario-name { font-size: 13px; font-weight: 700; }
+    .donut::after { content: ""; position: absolute; inset: 22px; border-radius: 50%; background: #0b2136; box-shadow: inset 0 0 22px rgba(0,0,0,.38); }
+    .donut-value { position: relative; z-index: 1; text-align: center; font-size: 34px; font-weight: 850; line-height: 1; }
+    .donut-value small { display: block; margin-top: 7px; color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+    .mix-legend { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+    .mix-stat { padding: 10px; border-radius: 10px; text-align: center; background: rgba(5,20,34,.55); }
+    .mix-stat strong { display: block; font-size: 20px; }
+    .mix-stat span { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+    .scenario-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    .scenario {
+      min-height: 154px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 9px;
+      padding: 14px;
+      border: 1px solid rgba(89,151,190,.22);
+      border-radius: 13px;
+      background: linear-gradient(145deg, rgba(16,43,68,.8), rgba(6,23,38,.88));
+      color: var(--text);
+      text-align: left;
+      transition: border-color .2s, transform .2s, background .2s;
+    }
+    .scenario:hover, .scenario[aria-pressed="true"] { border-color: var(--cyan); background: linear-gradient(145deg, rgba(25,65,94,.95), rgba(8,31,50,.95)); transform: translateY(-2px); }
+    .scenario:focus-visible { outline: 3px solid rgba(66,217,255,.35); outline-offset: 2px; }
+    .scenario-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .scenario-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; font-size: 20px; background: rgba(66,217,255,.1); border: 1px solid rgba(66,217,255,.18); }
+    .scenario-name { font-size: 14px; font-weight: 800; }
+    .scenario-description { min-height: 34px; color: var(--muted); font-size: 11px; line-height: 1.45; }
     .bar-track { height: 9px; overflow: hidden; border-radius: 999px; background: #071724; }
     .bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--cyan)); min-width: 3px; }
     .badge { min-width: 74px; padding: 5px 8px; border-radius: 999px; text-align: center; text-transform: uppercase; font-size: 10px; letter-spacing: .08em; font-weight: 850; }
@@ -117,6 +148,22 @@
     .warning { color: #ffe6b6; background: rgba(255,191,90,.17); }
     .observed { color: #c9ffe8; background: rgba(78,225,160,.16); }
     .not-run { color: var(--muted); background: rgba(155,181,200,.12); }
+    .scenario-detail { margin-top: 14px; padding: 22px; border-radius: 14px; border: 1px solid rgba(66,217,255,.3); background: linear-gradient(135deg, rgba(13,49,73,.88), rgba(6,24,40,.94)); }
+    .detail-title { display: flex; align-items: center; gap: 13px; margin-bottom: 8px; }
+    .detail-title .scenario-icon { width: 46px; height: 46px; font-size: 24px; }
+    .detail-title h3 { margin: 0; font-size: 22px; }
+    .detail-story { margin: 0 0 18px; color: #c4dbea; line-height: 1.6; }
+    .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .detail-block { padding: 15px; border-radius: 11px; background: rgba(4,18,31,.55); border: 1px solid rgba(89,151,190,.16); }
+    .detail-block h4 { margin: 0 0 8px; color: var(--cyan); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+    .detail-block p, .detail-block li { margin: 0; color: #c7dbe8; font-size: 12px; line-height: 1.55; }
+    .detail-block ul { margin: 0; padding-left: 17px; }
+    .detail-block.wide { grid-column: span 2; }
+    .flow { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; gap: 22px; margin-top: 12px; }
+    .flow-step { position: relative; padding: 14px 8px; border-radius: 11px; text-align: center; background: rgba(5,20,34,.62); border: 1px solid rgba(89,151,190,.18); }
+    .flow-step:not(:last-child)::after { content: "›"; position: absolute; right: -17px; top: 50%; translate: 0 -54%; color: var(--cyan); font-size: 28px; }
+    .flow-step strong { display: block; margin-bottom: 4px; color: var(--text); font-size: 12px; }
+    .flow-step span { color: var(--muted); font-size: 10px; }
     #trend { width: 100%; min-height: 300px; display: block; }
     .axis-label { fill: var(--muted); font-size: 10px; }
     .legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 8px; }
@@ -130,12 +177,15 @@
     th { position: sticky; top: 0; z-index: 1; padding: 12px; text-align: left; background: #102a42; color: #b9d4e6; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
     td { padding: 12px; border-top: 1px solid rgba(89,151,190,.13); color: #d8e8f3; font-size: 12px; vertical-align: top; }
     tbody tr:hover { background: rgba(66,217,255,.045); }
+    tbody tr { cursor: pointer; }
     .root { max-width: 300px; color: var(--muted); }
     footer { display: flex; justify-content: space-between; gap: 20px; margin-top: 18px; color: var(--muted); font-size: 12px; }
     .loading .metric .value, .loading .scenario-list, .loading #trend, .loading tbody { opacity: .35; }
     @media (max-width: 1080px) {
       .metrics { grid-template-columns: repeat(3, 1fr); }
       .grid { grid-template-columns: 1fr; }
+      .scenario-list { grid-template-columns: repeat(2, 1fr); }
+      .detail-grid { grid-template-columns: repeat(2, 1fr); }
       .guardrails { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 680px) {
@@ -145,8 +195,9 @@
       .metrics { grid-template-columns: repeat(2, 1fr); }
       .metric { min-height: 112px; }
       .metric .value { font-size: 27px; }
-      .scenario { grid-template-columns: 1fr auto; }
-      .bar-track { grid-column: 1 / -1; }
+      .scenario-list, .detail-grid, .flow { grid-template-columns: 1fr; }
+      .detail-block.wide { grid-column: auto; }
+      .flow-step:not(:last-child)::after { content: "⌄"; right: 50%; top: auto; bottom: -25px; translate: 50% 0; }
       .guardrails { grid-template-columns: 1fr; }
       footer { display: block; }
     }
@@ -180,10 +231,10 @@
     <section class="grid">
       <article class="panel">
         <div class="panel-head">
-          <h2>Scenario signals</h2>
-          <span class="panel-note">Runs by scenario</span>
+          <h2>Incident mix</h2>
+          <span class="panel-note">Live severity composition</span>
         </div>
-        <div id="scenarios" class="scenario-list"></div>
+        <div id="incident-mix" class="incident-mix"></div>
       </article>
       <article class="panel">
         <div class="panel-head">
@@ -197,6 +248,29 @@
           <span style="--legend: var(--amber)">P95 duration</span>
         </div>
       </article>
+    </section>
+
+    <section class="panel" style="margin-bottom:18px">
+      <div class="panel-head">
+        <h2>Interactive use-case explorer</h2>
+        <span class="panel-note">Select any scenario for the full SRE investigation story</span>
+      </div>
+      <div id="scenarios" class="scenario-list"></div>
+      <article id="scenario-detail" class="scenario-detail" aria-live="polite"></article>
+    </section>
+
+    <section class="panel" style="margin-bottom:18px">
+      <div class="panel-head">
+        <h2>How the showcase works</h2>
+        <span class="panel-note">From controlled fault to actionable SRE evidence</span>
+      </div>
+      <div class="flow" aria-label="SRE showcase data flow">
+        <div class="flow-step"><strong>1. Inject</strong><span>Controlled scenario</span></div>
+        <div class="flow-step"><strong>2. Observe</strong><span>Application Insights</span></div>
+        <div class="flow-step"><strong>3. Correlate</strong><span>Log Analytics</span></div>
+        <div class="flow-step"><strong>4. Investigate</strong><span>Azure SRE Agent</span></div>
+        <div class="flow-step"><strong>5. Improve</strong><span>Remediation and learning</span></div>
+      </div>
     </section>
 
     <section class="panel" style="margin-bottom:18px">
@@ -241,6 +315,109 @@
     };
     const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
     const dateTime = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "medium" });
+    let selectedScenario = "http-500";
+    const scenarioDetails = {
+      "http-500": {
+        icon: "⚡", title: "Checkout HTTP 500", short: "A customer checkout request fails unexpectedly.",
+        story: "A shopper submits an order and the checkout endpoint returns HTTP 500. This demonstrates how an SRE team moves from a customer-visible failure to the exact request, exception pattern, release context, and corrective action.",
+        impact: "Customers cannot complete purchases, conversion drops, and retries may amplify load.",
+        signal: "HTTP 500 response, failed-request rate, exception telemetry, and correlation ID.",
+        investigate: ["Confirm the failure-rate increase and affected operation.", "Correlate the request with exceptions and dependencies.", "Compare the failure start time with recent deployments."],
+        agent: "Summarizes the blast radius, correlates the failed request with telemetry, and proposes the most likely fault domain.",
+        remediation: "Handle the exception safely, validate inputs, roll back a bad release if present, and add a regression test.",
+        success: "Checkout returns 2xx, the failure-rate alert clears, and the same payload no longer reproduces the error."
+      },
+      "latency": {
+        icon: "⏱", title: "Catalog latency breach", short: "A synchronous operation pushes response time above the SLO.",
+        story: "The catalog endpoint remains available but takes roughly three seconds to respond. This illustrates why reliability is more than uptime and how SREs diagnose slow code paths before they become hard failures.",
+        impact: "Slow pages increase abandonment, consume workers longer, and can cause cascading timeouts.",
+        signal: "P95/P99 duration, request timeline, dependency duration, and worker utilization.",
+        investigate: ["Identify the slow operation and affected percentile.", "Separate application time from dependency time.", "Inspect traces for blocking or repeated work."],
+        agent: "Explains the latency regression in SLO terms and narrows investigation to the synchronous code path.",
+        remediation: "Make the work asynchronous, cache safe results, tune timeouts, and define a latency performance test.",
+        success: "P95 returns below the objective without increasing failures or serving stale data."
+      },
+      "dependency-failure": {
+        icon: "🔗", title: "Payment dependency outage", short: "A downstream service becomes unavailable.",
+        story: "Checkout cannot reach the payment dependency and responds with HTTP 503. The scenario showcases dependency mapping, fault isolation, graceful degradation, and evidence-based escalation.",
+        impact: "Payment-backed transactions stop while unrelated application capabilities may remain healthy.",
+        signal: "HTTP 503, failed dependency calls, connection errors, and correlated checkout failures.",
+        investigate: ["Confirm whether failure is local or downstream.", "Measure dependency failure rate and affected callers.", "Check retry behavior, timeout settings, and regional health."],
+        agent: "Builds a dependency-focused incident summary and distinguishes application faults from provider faults.",
+        remediation: "Use bounded retries with jitter, circuit breaking, graceful messaging, and a tested dependency runbook.",
+        success: "The application fails safely, avoids retry storms, and recovers automatically when the dependency returns."
+      },
+      "throttling": {
+        icon: "🚦", title: "API throttling", short: "Traffic exceeds the configured request quota.",
+        story: "The public API responds with HTTP 429 when demand crosses its quota. This use case demonstrates capacity analysis, client retry behavior, and protection against overload.",
+        impact: "Some clients are rejected; aggressive retries can turn a controlled limit into an outage.",
+        signal: "HTTP 429 count, request rate, retry volume, and quota or capacity utilization.",
+        investigate: ["Identify which clients and operations are throttled.", "Compare demand with quota and normal baseline.", "Verify Retry-After and client backoff behavior."],
+        agent: "Correlates rejection volume with traffic and recommends whether to optimize, scale, or adjust policy.",
+        remediation: "Apply exponential backoff, smooth bursts, cache repeated reads, and raise quotas only with cost review.",
+        success: "Demand remains within capacity and clients recover without synchronized retry spikes."
+      },
+      "queue-backlog": {
+        icon: "📚", title: "Queue backlog", short: "Messages accumulate while the consumer is stopped.",
+        story: "Twenty-five valid orders are queued without a consumer. The demonstration covers asynchronous workload health, age-of-oldest-message, throughput, and scale decisions.",
+        impact: "Orders are accepted but fulfillment is delayed, creating hidden customer impact and recovery work.",
+        signal: "Queue depth, message age, enqueue/dequeue rate, and consumer execution telemetry.",
+        investigate: ["Check consumer health and trigger execution.", "Compare arrival rate with processing rate.", "Estimate time to drain and inspect poison-message interference."],
+        agent: "Quantifies backlog growth, identifies the missing consumer, and estimates operational urgency.",
+        remediation: "Restore the processor, scale consumers within safe limits, and alert on both queue depth and message age.",
+        success: "The backlog drains predictably and steady-state processing keeps pace with arrivals."
+      },
+      "poison-message": {
+        icon: "☠", title: "Poison message", short: "Malformed data cannot be processed safely.",
+        story: "A producer sends malformed JSON with an invalid order ID. This scenario explains schema enforcement, dead-letter handling, replay safety, and producer accountability.",
+        impact: "Repeated processing can block useful work, waste compute, and hide data loss.",
+        signal: "Deserialization errors, dequeue count, dead-letter volume, and producer correlation metadata.",
+        investigate: ["Inspect the failing payload without exposing sensitive data.", "Identify the producer and schema version.", "Confirm retry and dead-letter thresholds."],
+        agent: "Links repeated failures to one malformed payload and recommends containment instead of endless retries.",
+        remediation: "Validate at ingestion, dead-letter after bounded attempts, fix the producer, and provide a controlled replay path.",
+        success: "Bad data is isolated, valid messages continue, and corrected messages can be replayed once."
+      },
+      "memory-pressure": {
+        icon: "▦", title: "Memory pressure", short: "An oversized in-memory payload consumes worker memory.",
+        story: "The function temporarily allocates 24 MiB to represent an oversized payload. The use case demonstrates memory trend analysis, concurrency effects, and right-sizing.",
+        impact: "High memory can trigger garbage-collection pauses, worker recycling, or out-of-memory termination.",
+        signal: "Working set, allocation rate, garbage collection, restarts, and request concurrency.",
+        investigate: ["Correlate memory growth with operation and payload size.", "Determine whether memory is released after requests.", "Check concurrency and instance limits."],
+        agent: "Connects resource pressure to the triggering operation and separates a temporary spike from a leak.",
+        remediation: "Stream large payloads, bound input size, reduce copies, and set safe concurrency limits.",
+        success: "Memory remains stable under expected concurrency with no worker recycling or latency regression."
+      },
+      "cpu-saturation": {
+        icon: "◉", title: "CPU saturation", short: "Inefficient hashing consumes a worker for two seconds.",
+        story: "A CPU-bound loop simulates inefficient computation. It shows how an SRE distinguishes compute saturation from dependency latency and chooses between code optimization and scaling.",
+        impact: "Requests wait longer, throughput falls, and scale-out may increase cost without fixing inefficient code.",
+        signal: "CPU utilization, request duration, throughput, instance count, and hot operation traces.",
+        investigate: ["Find the CPU-heavy operation and its duration.", "Compare CPU with dependency time and queueing.", "Check whether scale-out masks inefficient code."],
+        agent: "Correlates the latency spike with local compute and recommends optimization before capacity expansion.",
+        remediation: "Profile and optimize the algorithm, cache reusable results, or move heavy work to an asynchronous worker.",
+        success: "The operation completes within its latency budget at lower CPU per request."
+      },
+      "config-drift": {
+        icon: "⚙", title: "Configuration drift", short: "A runtime setting differs from the approved baseline.",
+        story: "The application expects SRE_DEMO_MODE=healthy but observes a drifted value. This demonstrates change correlation, desired-state validation, and safe configuration recovery.",
+        impact: "Behavior changes without a code deployment, creating inconsistent environments and difficult diagnosis.",
+        signal: "HTTP 503, configuration validation telemetry, resource change history, and deployment records.",
+        investigate: ["Compare actual settings with the approved baseline.", "Identify who or what changed the value.", "Check whether all instances and slots are affected."],
+        agent: "Surfaces the exact mismatch and correlates it with Azure resource changes rather than application code.",
+        remediation: "Restore the approved setting through IaC, restrict manual changes, and continuously audit configuration.",
+        success: "Runtime configuration matches source control and health checks return healthy."
+      },
+      "deployment-regression": {
+        icon: "↩", title: "Deployment regression", short: "A bad release fails post-deployment validation.",
+        story: "Release 2026.10-bad does not match the approved 2026.10-good baseline. This scenario showcases release correlation, progressive delivery, automated validation, and rollback decisions.",
+        impact: "A new release introduces customer-visible failure across the deployed scope.",
+        signal: "Failure start time, release version, deployment event, health validation, and error-rate delta.",
+        investigate: ["Align the incident start with deployment timing.", "Compare the new and previous release behavior.", "Determine blast radius and rollback safety."],
+        agent: "Produces a deployment-centered incident narrative and recommends the lowest-risk recovery action.",
+        remediation: "Stop rollout, return to the last known-good release, then fix and validate the change in a safe stage.",
+        success: "The known-good release restores service and deployment gates prevent recurrence."
+      }
+    };
 
     function renderMetrics(summary) {
       const cards = [
@@ -260,18 +437,83 @@
       }));
     }
 
+    function renderIncidentMix(summary) {
+      const total = Math.max(1, Number(summary.signals || 0));
+      const criticalAngle = Number(summary.critical || 0) / total * 360;
+      const observedAngle = (Number(summary.critical || 0) + Number(summary.warning || 0)) / total * 360;
+      const root = $("#incident-mix");
+      const donut = create("div", "donut");
+      donut.style.setProperty("--critical-angle", `${criticalAngle}deg`);
+      donut.style.setProperty("--observed-angle", `${observedAngle}deg`);
+      const value = create("div", "donut-value", summary.signals);
+      value.append(create("small", "", "signals"));
+      donut.append(value);
+      const legend = create("div", "mix-legend");
+      [["Critical", summary.critical], ["Warning", summary.warning], ["Coverage", `${summary.scenariosObserved}/10`]].forEach(([label, count]) => {
+        const stat = create("div", "mix-stat");
+        stat.append(create("strong", "", count), create("span", "", label));
+        legend.append(stat);
+      });
+      root.replaceChildren(donut, legend);
+    }
+
+    function showScenarioDetail(name, shouldScroll = false) {
+      const detail = scenarioDetails[name];
+      if (!detail) return;
+      selectedScenario = name;
+      document.querySelectorAll(".scenario").forEach(card => card.setAttribute("aria-pressed", String(card.dataset.scenario === name)));
+      const root = $("#scenario-detail");
+      const title = create("div", "detail-title");
+      title.append(create("div", "scenario-icon", detail.icon));
+      const heading = create("div");
+      heading.append(create("h3", "", detail.title), create("span", "panel-note", name));
+      title.append(heading);
+      const grid = create("div", "detail-grid");
+      const blocks = [
+        ["Business impact", detail.impact],
+        ["What Azure observes", detail.signal],
+        ["How the SRE Agent helps", detail.agent],
+        ["Investigation path", detail.investigate],
+        ["Recommended remediation", detail.remediation],
+        ["Definition of recovery", detail.success]
+      ];
+      blocks.forEach(([label, content], index) => {
+        const block = create("section", `detail-block${index === 3 ? " wide" : ""}`);
+        block.append(create("h4", "", label));
+        if (Array.isArray(content)) {
+          const list = document.createElement("ul");
+          content.forEach(item => list.append(create("li", "", item)));
+          block.append(list);
+        } else {
+          block.append(create("p", "", content));
+        }
+        grid.append(block);
+      });
+      root.replaceChildren(title, create("p", "detail-story", detail.story), grid);
+      if (shouldScroll) root.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
     function renderScenarios(coverage) {
       const maximum = Math.max(1, ...coverage.map(item => item.count));
       $("#scenarios").replaceChildren(...coverage.map(item => {
-        const row = create("div", "scenario");
-        row.append(create("div", "scenario-name", item.scenario));
+        const detail = scenarioDetails[item.scenario];
+        const row = create("button", "scenario");
+        row.type = "button";
+        row.dataset.scenario = item.scenario;
+        row.setAttribute("aria-pressed", String(item.scenario === selectedScenario));
+        row.setAttribute("aria-label", `Open detailed use case for ${detail.title}`);
+        const top = create("div", "scenario-top");
+        top.append(create("div", "scenario-icon", detail.icon), create("div", `badge ${item.status}`, item.count ? `${item.status} · ${item.count}` : item.status));
+        row.append(top, create("div", "scenario-name", detail.title), create("div", "scenario-description", detail.short));
         const track = create("div", "bar-track");
         const bar = create("div", "bar");
         bar.style.width = `${Math.max(3, (item.count / maximum) * 100)}%`;
         track.append(bar);
-        row.append(track, create("div", `badge ${item.status}`, item.count ? `${item.status} · ${item.count}` : item.status));
+        row.append(track);
+        row.addEventListener("click", () => showScenarioDetail(item.scenario, true));
         return row;
       }));
+      showScenarioDetail(selectedScenario);
     }
 
     function svgElement(name, attributes = {}) {
@@ -341,6 +583,15 @@
           number.format(event.itemCount || 0), event.summary, event.rootCause, event.correlationId
         ];
         values.forEach((value, index) => row.append(create("td", index === 7 ? "root" : "", value)));
+        row.tabIndex = 0;
+        row.setAttribute("aria-label", `Open ${event.scenario} use case details`);
+        row.addEventListener("click", () => showScenarioDetail(event.scenario, true));
+        row.addEventListener("keydown", keyboardEvent => {
+          if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+            keyboardEvent.preventDefault();
+            showScenarioDetail(event.scenario, true);
+          }
+        });
         return row;
       }));
     }
@@ -354,6 +605,7 @@
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
         renderMetrics(payload.summary);
+        renderIncidentMix(payload.summary);
         renderScenarios(payload.coverage);
         renderTrend(payload.requestSeries);
         renderGuardrails(payload.guardrails);
