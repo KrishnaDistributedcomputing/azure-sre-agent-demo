@@ -35,6 +35,7 @@ provides the architecture and a timestamped setup record.
 * [Connect workload telemetry](#connect-workload-telemetry)
 * [Upload and validate knowledge](#upload-and-validate-knowledge)
 * [Understand skills and skill sets](#understand-skills-and-skill-sets)
+* [Repository skill templates](#repository-skill-templates)
 * [Create a custom skill](#create-a-custom-skill)
 * [Attach tools and enable skills](#attach-tools-and-enable-skills)
 * [Validate an investigation](#validate-an-investigation)
@@ -269,6 +270,42 @@ Azure service.
 Start with one procedure. Add the other skills only when they have a clear
 trigger, an owner, a tested workflow, and appropriate tool access.
 
+## Repository skill templates
+
+The [skills directory](../skills/) contains reviewed source templates for the
+four procedures installed in `msdn-sre-agent`. These are maintained templates,
+not byte-for-byte exports of the native editor content. They preserve the
+installed procedures' read-only boundaries and tool selections.
+
+* [sre-demo-evidence-triage](../skills/sre-demo-evidence-triage/SKILL.md)
+* [sre-demo-queue-assessment](../skills/sre-demo-queue-assessment/SKILL.md)
+* [sre-demo-config-comparison](../skills/sre-demo-config-comparison/SKILL.md)
+* [sre-demo-report-validation](../skills/sre-demo-report-validation/SKILL.md)
+
+The first three declare `RunAzCliReadCommands` and
+`system-mcp-monitor_monitor_workspace_log_query`. Report validation declares
+only the workspace query tool. Its procedure checks report evidence; it does
+not authorize creating or editing reports.
+
+1. Review the selected template and adapt its subscription, resource group,
+   resource names, workspace ID, and approved baseline to your deployment.
+2. Open native **Skill builder > Create skill** and replace the default
+   editor content with the entire template, including YAML frontmatter.
+   Adding it as a supporting file does not replace the default procedure.
+3. Confirm that the form name matches the template and inspect the attached
+   tools. Resolve names against your actual tool picker; do not add write tools.
+4. Save and reopen the skill. Verify two attached tools for the first three
+   procedures and one for report validation.
+5. Open **Extensions > Skills > Custom skills**, enable the intended skills,
+   save if required, and refresh to confirm persistence.
+6. Start a bounded read-only conversation and inspect skill-load traces and
+   actual query output as described in [validation](#validate-an-investigation).
+
+These templates target native Azure SRE Agent, not Copilot. They intentionally
+live outside `.github/skills`. A GitHub commit neither installs them in Azure
+nor updates an already saved skill. Keep Review mode and existing scoped
+authorization; do not grant roles or retrieve credentials to bypass failures.
+
 ## Create a custom skill
 
 Microsoft Learn calls this **Builder > Skills**. In the preview navigation
@@ -287,8 +324,9 @@ The adjacent **Skills** page controls built-in and custom-skill enablement.
 
 ![Example skill authoring form with a name, description, and procedure](images/sre-setup/03-create-skill-draft.png)
 
-*Figure 3. An instructional skill-authoring example. No demo custom skill is
-left installed by this documentation task. The complete procedure is below.*
+*Figure 3. An instructional skill-authoring example captured before the
+four-skill installation. The complete introductory procedure is below;
+maintained templates are linked above.*
 
 Paste this original example into the skill editor:
 
@@ -432,7 +470,17 @@ Knowledge search retrieved the uploaded README's configuration section.
 The native connector list later showed both workload sources as Connected.
 Those observations do not independently test each named connector's execution.
 GitHub OAuth remains pending; incident integration is not configured.
-The illustrated custom skill is not left installed.
+
+In a subsequent installation on October 14, 2026, all four named custom skills
+were saved and confirmed enabled after a page reload. A validation conversation
+recorded a `read_skill_file` call for each skill and reported successful loading.
+One workspace query returned HTTP 200 with 1,474 `AppTraces` rows and 100
+`AppRequests` rows over one hour; both latest timestamps were 18:43:24 UTC.
+The Agent remained in Review mode with Low access.
+
+That check exercised skill loading, one aggregate query, and interpretation
+boundaries. It did not measure queue depth, inspect app settings, demonstrate
+configuration recovery, or independently execute each named connector.
 
 These are historical results, not live health values or a claim of a diagnosed
 production outage.

@@ -81,6 +81,15 @@ read-only tool selection, enablement, validation, and troubleshooting.
 The [web walkthrough](https://sredemo-be3wpifmuf.azurewebsites.net/api/sre-deep-dive#skills-guide)
 links to the GitHub guide and displays the configuration screenshots.
 
+The repository includes four [native SRE Agent skill templates](skills/):
+[evidence triage](skills/sre-demo-evidence-triage/SKILL.md),
+[queue assessment](skills/sre-demo-queue-assessment/SKILL.md),
+[configuration comparison](skills/sre-demo-config-comparison/SKILL.md), and
+[report validation](skills/sre-demo-report-validation/SKILL.md).
+Follow the guide's [installation steps](docs/sre-agent-configuration-and-skills.md#repository-skill-templates)
+to create and enable them in Azure SRE Agent. They are not VS Code skills, and
+committing them does not install or synchronize native skills automatically.
+
 For an existing deployment, run the scoped check without redeploying infrastructure:
 
 ```powershell
