@@ -216,6 +216,20 @@
     .detail-block p, .detail-block li { margin: 0; color: #405e71; font-size: 12px; line-height: 1.55; }
     .detail-block ul { margin: 0; padding-left: 17px; }
     .detail-block.wide { grid-column: span 2; }
+    .scenario-section { margin-top: 20px; }
+    .scenario-section h4 { margin: 0 0 10px; font-size: 16px; }
+    .scenario-section p, .scenario-section li { color: #405e71; font-size: 12px; line-height: 1.6; }
+    .component-roles, .sample-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .component-role, .sample-metric { min-width: 0; padding: 15px; border: 1px solid var(--line); border-radius: 11px; background: #fff; }
+    .component-role strong, .sample-metric strong { display: block; margin-bottom: 7px; font-size: 13px; }
+    .component-role p { margin: 0; }
+    .sample-notice { padding: 12px; border: 1px solid #e8c982; border-radius: 10px; background: #fff7e5; color: #684500 !important; }
+    .sample-metric svg { display: block; width: 100%; height: 150px; }
+    .sample-metric svg text { fill: var(--text); font-size: 11px; }
+    .sample-values { margin-bottom: 0; font-variant-numeric: tabular-nums; }
+    .scenario-code { margin: 10px 0; padding: 15px; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--line); border-radius: 10px; background: #edf5f9; font-size: 12px; line-height: 1.6; }
+    .agent-steps { padding-left: 22px; }
+    .agent-steps li + li { margin-top: 8px; }
     .flow { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; gap: 22px; margin-top: 12px; }
     .flow-step { position: relative; padding: 14px 8px; border-radius: 11px; text-align: center; background: #f3f8fb; border: 1px solid var(--line); }
     .flow-step:not(:last-child)::after { content: "›"; position: absolute; right: -17px; top: 50%; translate: 0 -54%; color: var(--cyan); font-size: 28px; }
@@ -255,6 +269,7 @@
       .grid { grid-template-columns: 1fr; }
       .scenario-list { grid-template-columns: repeat(2, 1fr); }
       .detail-grid { grid-template-columns: repeat(2, 1fr); }
+      .component-roles, .sample-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .guardrails { grid-template-columns: repeat(2, 1fr); }
       .guide-grid, .glossary { grid-template-columns: repeat(2, 1fr); }
     }
@@ -268,6 +283,7 @@
       .metric { min-height: 112px; }
       .metric .value { font-size: 27px; }
       .scenario-list, .detail-grid, .flow { grid-template-columns: 1fr; }
+      .component-roles, .sample-metrics { grid-template-columns: 1fr; }
       .detail-block.wide { grid-column: auto; }
       .flow-step:not(:last-child)::after { content: "⌄"; right: 50%; top: auto; bottom: -25px; translate: 50% 0; }
       .guardrails { grid-template-columns: 1fr; }
@@ -295,8 +311,8 @@
         </label>
         <button id="refresh" type="button">Refresh now</button>
         <a class="nav-link" href="./resources">Azure components</a>
-        <a class="nav-link" href="./partner">Partner requirements</a>
         <a class="nav-link" href="./cost">View cost plan</a>
+        <a class="nav-link" href="./sre-deep-dive">SRE Agent deep dive</a>
       </div>
     </header>
 
@@ -354,10 +370,10 @@
       </article>
     </section>
 
-    <section class="panel" style="margin-bottom:18px">
+    <section id="business-risk-scenarios" class="panel" style="margin-bottom:18px">
       <div class="panel-head">
         <h2>Business risk scenarios <button class="help" type="button" data-help="Select a card to see the business impact, evidence, investigation path, SRE Agent contribution, remediation, and recovery definition." aria-label="Explain business risk scenarios">?</button></h2>
-        <span class="panel-note">Select any scenario for the full SRE investigation story</span>
+        <span class="panel-note">Select a scenario for Azure components, sample dashboards, and an Agent walkthrough</span>
       </div>
       <div id="scenarios" class="scenario-list"></div>
       <article id="scenario-detail" class="scenario-detail" aria-live="polite"></article>
@@ -530,7 +546,7 @@
         investigate: ["Compare actual settings with the approved baseline.", "Identify who or what changed the value.", "Check whether all instances and slots are affected."],
         agent: "Surfaces the exact mismatch and correlates it with Azure resource changes rather than application code.",
         remediation: "Restore the approved setting through IaC, restrict manual changes, and continuously audit configuration.",
-        success: "Runtime configuration matches source control and health checks return healthy."
+        success: "SRE_DEMO_MODE matches the approved healthy baseline and rerunning config-drift returns HTTP 200."
       },
       "deployment-regression": {
         icon: "↩", title: "Deployment regression", short: "A bad release fails post-deployment validation.",
@@ -540,7 +556,7 @@
         investigate: ["Align the incident start with deployment timing.", "Compare the new and previous release behavior.", "Determine blast radius and rollback safety."],
         agent: "Produces a deployment-centered incident narrative and recommends the lowest-risk recovery action.",
         remediation: "Stop rollout, return to the last known-good release, then fix and validate the change in a safe stage.",
-        success: "The known-good release restores service and deployment gates prevent recurrence."
+        success: "For a real release, validate restored service and release gates after rollback. This demo scenario remains intentionally HTTP 500 and cannot validate a successful rollback."
       }
     };
     const businessContexts = {
@@ -555,6 +571,192 @@
       "config-drift": ["Governance", "Configuration compliance"],
       "deployment-regression": ["Change safety", "Successful release rate"]
     };
+    const scenarioPlaybooks = {
+      "http-500": {
+        components: [
+          ["Azure Functions", "The http-500 scenario returns HTTP 500 and emits a correlated severity 1 trace."],
+          ["Application Insights", "Records request status and scenario traces; use operation IDs when correlating requests."]
+        ],
+        metrics: [
+          ["Failed requests / 5 min", "requests", [0, 12, 0]],
+          ["Checkout success", "%", [100, 76, 100]],
+          ["P95 request duration", "ms", [180, 950, 180]]
+        ],
+        limits: "This is a simulated checkout response, not a deployed commerce service. No real exception is thrown; exception records may be absent.",
+        question: "Investigate http-500 traces and failed requests. Identify affected operations, distinguish the simulated trace from actual exceptions, and report impact only where request telemetry supports it.",
+        evidence: "Cite the scenario timestamp, HTTP 500 status, correlation ID, and matching request operation ID when available."
+      },
+      "latency": {
+        components: [
+          ["Azure Functions", "The latency scenario blocks synchronously for about three seconds and records elapsed duration."],
+          ["Application Insights", "Measures request duration; inspect AppRequests percentiles separately from the recorded scenario duration."]
+        ],
+        metrics: [
+          ["P95 request duration", "ms", [180, 3200, 190]],
+          ["Slow requests / 5 min", "requests", [0, 18, 0]],
+          ["Request throughput", "requests/min", [60, 24, 60]]
+        ],
+        limits: "The catalog is illustrative. The demo performs a fixed sleep, not a real catalog query; worker utilization and dependency timings require additional evidence.",
+        question: "Investigate latency traces and AppRequests duration percentiles. Separate the three-second synchronous wait from dependency time, and do not infer CPU saturation from slow requests alone.",
+        evidence: "Cite recorded duration_ms, request P50/P95/P99, operation names, and the time window."
+      },
+      "dependency-failure": {
+        components: [
+          ["Azure Functions", "The dependency-failure scenario returns HTTP 503 with a simulated payment connection-refusal explanation."],
+          ["Application Insights", "Collects failed requests and scenario traces; inspect AppDependencies only if real calls are instrumented."]
+        ],
+        metrics: [
+          ["Payment failure rate", "%", [0, 100, 0]],
+          ["HTTP 503 / 5 min", "requests", [0, 20, 0]],
+          ["Payment P95 duration", "ms", [220, 2000, 230]]
+        ],
+        limits: "No payment service, outbound payment call, or circuit breaker is deployed. Dependency metrics below are a production-style example, not measured payment telemetry.",
+        question: "Investigate dependency-failure evidence. Check whether AppDependencies contains actual payment calls before attributing the outage downstream; distinguish simulated HTTP 503 from verified provider failures.",
+        evidence: "Cite HTTP 503 traces and any actual dependency target, result code, and operation correlation; mark missing dependency data explicitly."
+      },
+      "throttling": {
+        components: [
+          ["Azure Functions", "The throttling scenario returns HTTP 429 unconditionally to represent a request quota rejection."],
+          ["Application Insights", "Provides observed 429 request counts and request volume for correlation."]
+        ],
+        metrics: [
+          ["HTTP 429 rate", "%", [0, 35, 0]],
+          ["Incoming traffic", "requests/min", [80, 200, 90]],
+          ["Client retries / min", "retries", [0, 70, 2]]
+        ],
+        limits: "No API Management gateway, rate-limit policy, quota counter, or retrying client is deployed. A 429 here does not prove actual demand or quota exhaustion.",
+        question: "Investigate throttling traces and HTTP 429 requests. Verify whether a real quota policy and Retry-After evidence exist before recommending capacity or quota changes.",
+        evidence: "Cite 429 counts, measured request volume, operation, and time range; label client retries and quota utilization unavailable unless instrumented."
+      },
+      "queue-backlog": {
+        components: [
+          ["Azure Storage Queue", "The sre-demo-events queue receives 25 valid messages per scenario invocation."],
+          ["Azure Functions", "The API is a producer only. No queue-trigger consumer is deployed in this evaluation."]
+        ],
+        metrics: [
+          ["Queue depth", "messages", [0, 25, 0]],
+          ["Oldest message age", "min", [0, 15, 0]],
+          ["Consumer throughput", "messages/min", [5, 0, 10]]
+        ],
+        limits: "The trace item_count reports messages enqueued by one invocation, not current queue depth. Message age and drain rate need queue inspection and a separately implemented consumer.",
+        question: "Investigate queue-backlog traces and the sre-demo-events queue using authorized read-only tools. Confirm that no consumer is deployed and separate enqueued count from current depth.",
+        evidence: "Cite enqueue item_count and timestamp; obtain current depth and message age separately. Estimate drain time only with measured processing and arrival rates."
+      },
+      "poison-message": {
+        components: [
+          ["Azure Storage Queue", "Stores one malformed JSON message in sre-demo-events for each poison-message invocation."],
+          ["Azure Functions", "Produces the invalid payload. A queue-trigger consumer and its poison-message handling are not deployed."]
+        ],
+        metrics: [
+          ["Malformed messages", "messages", [0, 1, 0]],
+          ["Dequeue attempts", "attempts", [0, 5, 0]],
+          ["Valid processing", "messages/min", [10, 2, 10]]
+        ],
+        limits: "The demo does not deserialize, retry, quarantine, or replay messages. A poison queue is not automatically created by this producer-only scenario.",
+        question: "Investigate poison-message traces. Confirm the producer schema violation and whether any consumer, retry policy, or poison queue actually exists. Propose bounded quarantine and replay without executing them.",
+        evidence: "Cite the producer trace and item_count. Do not claim deserialization failures, dequeue attempts, or quarantine completion without consumer evidence."
+      },
+      "memory-pressure": {
+        components: [
+          ["Azure Functions Flex Consumption", "The memory-pressure function temporarily allocates 24 MiB within its worker."],
+          ["Application Insights", "Records the allocated byte count and trace; worker memory and restart measurements need separate instrumentation."]
+        ],
+        metrics: [
+          ["Worker working set", "MiB", [120, 360, 130]],
+          ["P95 request duration", "ms", [180, 780, 190]],
+          ["Worker restarts / hour", "restarts", [0, 2, 0]]
+        ],
+        limits: "A bounded 24 MiB allocation does not establish a leak, out-of-memory failure, or worker restart. The sample working set is illustrative, not the allocation size.",
+        question: "Investigate memory-pressure traces. Compare allocated bytes with available worker memory and concurrency data, distinguishing a transient allocation from sustained growth.",
+        evidence: "Cite item_count in bytes and timestamps; require measured working set and restart evidence before diagnosing a leak or out-of-memory event."
+      },
+      "cpu-saturation": {
+        components: [
+          ["Azure Functions Flex Consumption", "Runs a bounded SHA-256 loop for about two seconds on one worker."],
+          ["Application Insights", "Captures elapsed duration and loop iterations; CPU percentage requires platform metrics or profiling."]
+        ],
+        metrics: [
+          ["Worker CPU", "%", [15, 95, 20]],
+          ["P95 request duration", "ms", [200, 2400, 220]],
+          ["Request throughput", "requests/min", [60, 20, 60]]
+        ],
+        limits: "The loop demonstrates CPU-bound work but does not measure fleet-wide CPU utilization or prove saturation across instances.",
+        question: "Investigate cpu-saturation duration and iteration evidence. Correlate with available worker CPU and request metrics, compare local compute with dependency wait, and recommend profiling before scaling.",
+        evidence: "Cite duration_ms and iteration item_count. Mark CPU percentage and instance-level saturation unavailable if no platform metrics are connected."
+      },
+      "config-drift": {
+        components: [
+          ["Azure Function App configuration", "Compares SRE_DEMO_MODE with the approved healthy value; mismatch returns HTTP 503."],
+          ["Bicep and Azure Resource Manager", "Define desired configuration. Change history or Activity Log is needed to identify who changed it."]
+        ],
+        metrics: [
+          ["Configuration mismatches", "settings", [0, 1, 0]],
+          ["HTTP 503 / 5 min", "requests", [0, 10, 0]],
+          ["Synthetic check success", "%", [100, 0, 100]]
+        ],
+        limits: "The scenario checks one setting only. The general /api/health endpoint always reports healthy and does not validate configuration; recovery must rerun the scenario.",
+        question: "Investigate config-drift evidence against the approved SRE_DEMO_MODE=healthy baseline. Use authorized configuration and change-history tools without exposing unrelated settings or secrets.",
+        evidence: "Cite the mismatch trace and 503 result. Attribute the change only with Activity Log evidence; verify recovery by rerunning config-drift, not /api/health alone."
+      },
+      "deployment-regression": {
+        components: [
+          ["Azure Function deployment package", "Represents the published Python application and its release marker SRE_DEMO_RELEASE."],
+          ["Azure Functions and Application Insights", "The scenario always returns a synthetic HTTP 500 and logs actual and approved release markers."]
+        ],
+        metrics: [
+          ["Post-release failure rate", "%", [0, 40, 0]],
+          ["Release validation failures", "checks", [0, 5, 0]],
+          ["Checkout success", "%", [100, 60, 100]]
+        ],
+        limits: "There is no real bad-release rollout or rollback in this scenario. It always returns HTTP 500, even if the marker is changed to 2026.10-good; recovered values are illustrative.",
+        question: "Investigate deployment-regression traces and release markers against 2026.10-good. Correlate with actual deployment history if accessible, and propose rollback with approval and validation gates.",
+        evidence: "Cite release-marker traces and actual deployment records separately. Do not report successful rollback from a marker edit or expect this intentionally failing scenario to return 2xx."
+      }
+    };
+    const sharedScenarioComponents = [
+      ["Log Analytics workspace", "Stores AppTraces and AppRequests. Scenario JSON includes severity, timestamp, correlationId, status_code, duration_ms, and item_count."],
+      ["Azure Monitor and Action Group", "Configured alert rules evaluate their own thresholds and route notifications. A scenario event does not guarantee an alert or an automatic Agent investigation."],
+      ["Azure SRE Agent", "After connecting the demo resources and workspace, an operator starts an investigation with the prompt below. Read-only access supports evidence gathering, not unapproved remediation."]
+    ];
+
+    function scenarioQuery(name) {
+      return `AppTraces
+| where TimeGenerated >= ago(24h)
+| where Message has '"eventType":"sre-demo-scenario"'
+| extend event = parse_json(Message)
+| where tostring(event.scenario) == "${name}"
+| project TimeGenerated, severity=toint(event.severity),
+    statusCode=toint(event.status_code), durationMs=toint(event.duration_ms),
+    itemCount=toint(event.item_count), summary=tostring(event.summary),
+    expectedRootCause=tostring(event.expected_root_cause),
+    correlationId=tostring(event.correlationId)
+| order by TimeGenerated desc`;
+    }
+
+    function scenarioAgentPrompt(name) {
+      const playbook = scenarioPlaybooks[name];
+      return `Investigate ${name} in rg-sre-demo during the last 24 hours.
+${playbook.question}
+${playbook.evidence}
+Treat expected_root_cause as a simulation label, not independently proven root cause.
+Return: impact, evidence with timestamps and query references, ranked hypotheses,
+missing data, proposed mitigation, approval owner, and measurable recovery checks.
+Use read-only tools. Do not change resources or replay messages without human approval.
+The sample dashboard values in this portal are illustrative, not investigation evidence.`;
+    }
+
+    function scenarioReportPrompt(name) {
+      const playbook = scenarioPlaybooks[name];
+      return `Create a Live Report named "${scenarioDetails[name].title} - investigation dashboard".
+Scope: rg-sre-demo, last 24 hours, scenario=${name}.
+Start with the scenario AppTraces query below and show a correlated evidence table.
+Requested metric panels: ${playbook.metrics.map(([label, unit]) => `${label} (${unit})`).join("; ")}.
+Query AppRequests and additional connected Azure metrics only where available.
+Do not substitute scenario duration for request P95, or item_count for queue depth.
+Show "Not instrumented" for unavailable metrics; never populate panels with sample numbers.
+Add time and scenario filters. Use read-only connector queries and avoid model-assisted analysis during routine refresh.
+This is a creation prompt: no Live Report has been created by this portal.`;
+    }
 
     function createHelp(text, label) {
       const button = create("button", "help", "?");
@@ -620,6 +822,72 @@
       root.replaceChildren(donut, legend);
     }
 
+    function renderScenarioWalkthrough(name) {
+      const playbook = scenarioPlaybooks[name];
+      const components = create("section", "scenario-section");
+      components.append(create("h4", "", "Azure components and responsibilities"));
+      const roles = create("div", "component-roles");
+      [...playbook.components, ...sharedScenarioComponents].forEach(([label, description]) => {
+        const card = create("article", "component-role");
+        card.append(create("strong", "", label), create("p", "", description));
+        roles.append(card);
+      });
+      components.append(roles, create("p", "sample-notice", `Demo evidence boundary: ${playbook.limits}`));
+
+      const dashboard = create("section", "scenario-section");
+      dashboard.append(
+        create("h4", "", `Sample dashboard: ${scenarioDetails[name].title}`),
+        create("p", "sample-notice", "Illustrative sample data only, not live Azure measurements or SRE Agent results. Before, Incident, and Recovered are example states, not an executed recovery. Each chart has its own scale.")
+      );
+      const metrics = create("div", "sample-metrics");
+      const phases = ["Before", "Incident", "Recovered"];
+      playbook.metrics.forEach(([label, unit, values]) => {
+        const card = create("article", "sample-metric");
+        card.append(create("strong", "", `${label} (${unit})`));
+        const description = values.map((value, index) => `${phases[index]}: ${number.format(value)} ${unit}`).join("; ");
+        const chart = svgElement("svg", { viewBox: "0 0 270 150", role: "img", "aria-label": `${label}. Illustrative sample. ${description}` });
+        const maximum = Math.max(1, ...values);
+        chart.append(svgElement("line", { x1: 10, y1: 115, x2: 260, y2: 115, stroke: "#c6dae6" }));
+        values.forEach((value, index) => {
+          const x = 30 + index * 85;
+          const height = value / maximum * 80;
+          chart.append(svgElement("rect", { x, y: 115 - height, width: 40, height, fill: ["#007da8", "#c13d50", "#16835a"][index] }));
+          const valueLabel = svgElement("text", { x: x + 20, y: 105 - height, "text-anchor": "middle" });
+          valueLabel.textContent = number.format(value);
+          const phaseLabel = svgElement("text", { x: x + 20, y: 137, "text-anchor": "middle" });
+          phaseLabel.textContent = phases[index];
+          chart.append(valueLabel, phaseLabel);
+        });
+        card.append(chart, create("p", "sample-values", description));
+        metrics.append(card);
+      });
+      dashboard.append(metrics);
+
+      const agent = create("section", "scenario-section");
+      agent.append(
+        create("h4", "", "How SRE Agent would work"),
+        create("p", "", "Guided walkthrough, not a live Agent session. Connect the evaluation resources and Log Analytics workspace with approved read access, then paste this prompt into Azure SRE Agent.")
+      );
+      const steps = create("ol", "agent-steps");
+      [
+        "Start with the scenario trace and the selected time window; confirm the business impact from measured evidence.",
+        ...scenarioDetails[name].investigate,
+        playbook.evidence,
+        "Return a ranked hypothesis with citations and missing data. Require a human owner to approve and execute any proposed change.",
+        `Validate against this recovery target: ${scenarioDetails[name].success} Respect the demo evidence boundary above.`
+      ].forEach(step => steps.append(create("li", "", step)));
+      agent.append(steps, create("pre", "scenario-code", scenarioAgentPrompt(name)));
+      const report = create("details", "scenario-section");
+      report.append(
+        create("summary", "", "Create this dashboard in SRE Agent Live Reports"),
+        create("p", "", "Paste this template into the connected SRE Agent. This portal does not create reports, start investigations, or execute remediation."),
+        create("pre", "scenario-code", scenarioReportPrompt(name)),
+        create("h4", "", "Scenario evidence query (Log Analytics KQL)"),
+        create("pre", "scenario-code", scenarioQuery(name))
+      );
+      return [components, dashboard, agent, report];
+    }
+
     function showScenarioDetail(name, shouldScroll = false) {
       const detail = scenarioDetails[name];
       const [category, businessKpi] = businessContexts[name];
@@ -636,8 +904,8 @@
       const blocks = [
         ["Business measure", businessKpi],
         ["Business impact", detail.impact],
-        ["What Azure observes", detail.signal],
-        ["How the SRE Agent helps", detail.agent],
+        ["Investigation signals (where instrumented)", detail.signal],
+        ["Expected SRE Agent contribution", detail.agent],
         ["Investigation path", detail.investigate],
         ["Recommended remediation", detail.remediation],
         ["Definition of recovery", detail.success]
@@ -654,7 +922,7 @@
         }
         grid.append(block);
       });
-      root.replaceChildren(title, create("p", "detail-story", detail.story), grid);
+      root.replaceChildren(title, create("p", "detail-story", detail.story), grid, ...renderScenarioWalkthrough(name));
       if (shouldScroll) root.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
@@ -669,7 +937,7 @@
         row.setAttribute("aria-pressed", String(item.scenario === selectedScenario));
         row.setAttribute("aria-label", `Open detailed use case for ${detail.title}`);
         const top = create("div", "scenario-top");
-        top.append(create("div", "scenario-icon", detail.icon), create("div", `badge ${item.status}`, item.count ? `${item.status} · ${item.count}` : item.status));
+        top.append(create("div", "scenario-icon", detail.icon), create("div", `badge ${item.status}`, item.status === "unavailable" ? "Awaiting telemetry" : item.count ? `${item.status} · ${item.count}` : item.status));
         row.append(top, create("div", "scenario-kicker", category), create("div", "scenario-name", detail.title), create("div", "scenario-description", detail.short));
         const track = create("div", "bar-track");
         const bar = create("div", "bar");
@@ -825,6 +1093,7 @@
         });
       }
     });
+    renderScenarios(Object.keys(scenarioDetails).map(scenario => ({ scenario, count: 0, status: "unavailable" })));
     loadDashboard();
     setInterval(loadDashboard, 60000);
   </script>

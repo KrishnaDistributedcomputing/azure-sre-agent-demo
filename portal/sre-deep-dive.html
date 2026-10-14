@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A technical deep dive into Azure SRE Agent architecture, investigations, Live Reports, governance, and evaluation, with Microsoft Learn references">
+  <title>Azure SRE Agent: Technical Deep Dive</title>
+  <style>
+    :root { color-scheme: light; --text: #102a43; --muted: #597184; --line: #c6dae6; --cyan: #007da8; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--text); background: #f3f8fb; font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+    a { color: #006b91; text-underline-offset: 3px; overflow-wrap: anywhere; }
+    a:focus-visible { outline: 3px solid #007da8; outline-offset: 3px; }
+    .shell { width: min(1320px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 48px; }
+    .top-nav, .links { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .top-nav { justify-content: space-between; margin-bottom: 32px; }
+    .brand, .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .nav-link { padding: 10px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fff; text-decoration: none; font-size: 12px; font-weight: 750; }
+    header { margin-bottom: 26px; }
+    h1 { max-width: 1000px; margin: 10px 0 16px; font-size: clamp(32px, 5vw, 58px); line-height: 1.08; letter-spacing: -.035em; }
+    .lede { max-width: 940px; color: var(--muted); font-size: 18px; line-height: 1.65; }
+    .metadata { color: var(--muted); font-size: 12px; }
+    .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); align-items: start; gap: 22px; }
+    .contents { position: sticky; top: 16px; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    .contents h2 { margin-top: 0; font-size: 16px; }
+    .contents ol { margin: 0; padding-left: 20px; }
+    .contents li { padding: 5px 0; font-size: 12px; line-height: 1.5; }
+    article { min-width: 0; padding: 30px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+    section { scroll-margin-top: 20px; }
+    section + section { margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--line); }
+    h2 { font-size: 25px; line-height: 1.25; }
+    h3 { margin-top: 25px; font-size: 18px; }
+    p, li, td { font-size: 15px; line-height: 1.75; }
+    li + li { margin-top: 5px; }
+    .callout { padding: 15px 18px; border: 1px solid #e8c982; border-radius: 10px; background: #fff7e5; color: #684500; }
+    .source { color: var(--muted); font-size: 12px; }
+    pre { max-width: 100%; padding: 18px; overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #edf5f9; font-size: 12px; line-height: 1.65; }
+    .prompt { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .table-wrap { max-width: 100%; overflow-x: auto; }
+    table { width: 100%; min-width: 650px; border-collapse: collapse; }
+    th, td { padding: 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #edf5f9; font-size: 12px; }
+    td { font-size: 13px; }
+    code { overflow-wrap: anywhere; }
+    .references li { margin-bottom: 12px; }
+    .diagram { margin: 24px 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #f7fbfd; }
+    .diagram h3 { margin: 0 0 12px; }
+    .diagram-chart { overflow-x: auto; background: #fff; border-radius: 8px; }
+    .diagram-chart .mermaid { min-width: 680px; margin: 0; padding: 12px; border: 0; background: #fff; }
+    .diagram-chart svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+    .diagram figcaption { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .diagram-use { padding: 14px 18px; border-left: 3px solid var(--cyan); background: #edf5f9; }
+    .diagram-use h3 { margin-top: 0; }
+    .diagram-status { padding: 12px 16px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+    .setup-shot { margin: 22px 0; }
+    .setup-shot img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; }
+    .setup-shot figcaption { margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    footer { margin-top: 22px; color: var(--muted); font-size: 12px; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .contents { position: static; }
+      article { padding: 20px; }
+    }
+    @media print {
+      body { background: #fff; }
+      .shell { width: 100%; padding: 0; }
+      .top-nav, .contents { display: none; }
+      .layout { display: block; }
+      article { border: 0; padding: 0; }
+      h2, h3 { break-after: avoid; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+      table { min-width: 0; }
+      a { color: inherit; }
+      .diagram { break-inside: avoid; padding: 8px; }
+      .diagram-chart { overflow: visible; }
+      .diagram-chart .mermaid { min-width: 0; padding: 0; }
+      .diagram-status { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="top-nav" aria-label="Portal navigation">
+      <span class="brand">Azure SRE Agent showcase</span>
+      <div class="links">
+        <a class="nav-link" href="./portal">Reliability dashboard</a>
+        <a class="nav-link" href="./resources">Azure components</a>
+        <a class="nav-link" href="./cost">Cost planner</a>
+      </div>
+    </nav>
+    <header>
+      <div class="eyebrow">Technical paper</div>
+      <h1>Azure SRE Agent: from operational signals to governed recovery</h1>
+      <p class="lede">An engineering deep dive into deployment boundaries, evidence-based investigation, reusable dashboards, and controlled automation, applied to ten reliability scenarios.</p>
+      <p class="metadata">Published October 14, 2026 | Audience: SREs, platform engineers, architects, and service owners | Microsoft Learn sources checked October 14, 2026 | Use your browser's print command to save a PDF.</p>
+      <p id="diagram-status" class="diagram-status" role="status">Loading five Mermaid diagrams. On small screens, scroll each diagram horizontally; the usage guidance below each figure remains readable without JavaScript.</p>
+      <noscript><p class="callout">JavaScript is disabled. Diagram source, captions, and practical usage instructions remain available below.</p></noscript>
+    </header>
+    <div class="layout">
+      <nav class="contents" aria-label="Paper contents">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#summary">Executive argument</a></li>
+          <li><a href="#architecture">Deployment architecture</a></li>
+          <li><a href="#lifecycle">Investigation lifecycle</a></li>
+          <li><a href="#evidence">Evidence and KQL</a></li>
+          <li><a href="#scenarios">Ten scenario applications</a></li>
+          <li><a href="#reports">Dashboards and Live Reports</a></li>
+          <li><a href="#governance">Identity and governance</a></li>
+          <li><a href="#extensions">Extensibility</a></li>
+          <li><a href="#cost">Cost and lifecycle</a></li>
+          <li><a href="#evaluation">Evaluation and adoption</a></li>
+          <li><a href="#setup">Configure this Agent</a></li>
+          <li><a href="#skills-guide">Skills and screenshot guide</a></li>
+          <li><a href="#references">Microsoft Learn references</a></li>
+        </ol>
+      </nav>
+      <article aria-label="Azure SRE Agent deep-dive paper">
+        <section id="summary">
+          <h2>1. Executive argument: reduce investigation friction, not accountability</h2>
+          <p>Reliability incidents usually begin with an incomplete observation: requests are failing, latency has increased, or a queue is growing. The operational work is to establish scope, gather evidence from several systems, compare explanations, and choose a reversible response. Azure SRE Agent provides an agent-assisted interface to that work. Its value is not that a model can describe an outage; it is that a configured agent can retrieve relevant operational context and use permitted tools within an organization's controls.</p>
+          <p>Microsoft describes interactive investigation, incident-driven workflows, and scheduled operational work. These are different entry points into the same engineering problem: observations must become testable hypotheses before they become infrastructure changes. A useful output therefore identifies evidence, uncertainty, proposed actions, and validation criteria rather than merely presenting a plausible root cause.</p>
+          <p>This evaluation portal is a teaching surface, not the SRE Agent service. Its Functions generate bounded signals, and its public pages display selected telemetry and instructional samples. Opening a scenario does not start an agent thread. A sample chart is not a saved Live Report. A remediation recommendation is not an executed recovery.</p>
+          <p class="source">Product grounding: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/overview">Microsoft Learn: Azure SRE Agent overview</a> [1].</p>
+        </section>
+        <section id="architecture">
+          <h2>2. Deployment architecture: distinguish four operational boundaries</h2>
+          <p>The <a href="./resources">component command center</a> describes the deployment topology. For reasoning about access and failure, separate the workload that produces evidence, the services that store it, the agent that investigates it, and the governance that limits its lifecycle.</p>
+          <figure id="agent-architecture-diagram" class="diagram" aria-labelledby="agent-architecture-title">
+            <h3 id="agent-architecture-title">Figure 1. Where SRE Agent sits in the Azure environment</h3>
+            <div class="diagram-chart" tabindex="0" role="region" aria-label="Scrollable SRE Agent architecture diagram">
+              <pre class="mermaid">
+flowchart TB
+  engineer["SRE or service owner"] -->|"Start an investigation"| agent["Azure SRE Agent"]
+  subgraph evaluation["Evaluation workload and evidence"]
+    workload["Azure Functions scenario APIs"] --> insights["Application Insights"]
+    workload --> queue["Azure Storage Queue"]
+    insights --> logs["Log Analytics workspace"]
+    logs --> alerts["Configured Azure Monitor rules"]
+  end
+  agent -->|"Authorized read tools"| logs
+  agent -->|"Authorized resource inspection"| workload
+  agent -->|"Read queue metadata when permitted"| queue
+  alerts -.->|"Optional configured incident integration"| agent
+  agent --> findings["Evidence, hypotheses, and proposed mitigation"]
+  logs -->|"Function App identity queries"| portal["Public reliability portal"]
+  findings -.->|"Separate creation request"| report["Saved SRE Agent Live Report"]
+              </pre>
+            </div>
+            <figcaption>Solid arrows show a request or evidence path. The dotted alert path requires a configured incident integration; the dotted report path requires a separate creation request. The portal, agent, and workload have different responsibilities and identities.</figcaption>
+          </figure>
+          <div class="diagram-use">
+            <h3>How to use this architecture</h3>
+            <ol>
+              <li>Run one bounded scenario and confirm its trace in the demo workspace before asking the agent to diagnose it.</li>
+              <li>Verify that the agent can query that workspace and inspect the specific Function App or queue. Dashboard access alone does not establish agent access.</li>
+              <li>Start a scoped investigation. Configure Azure Monitor incident intake separately if you want alert-driven investigations; no such integration is created by this figure.</li>
+            </ol>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Boundary</th><th>Components in this evaluation</th><th>Engineering responsibility</th></tr></thead>
+              <tbody>
+                <tr><td>Workload</td><td>Linux Azure Functions Flex Consumption, private deployment package storage, and Azure Storage Queue</td><td>Generate controlled HTTP, latency, queue, memory, CPU, configuration, and release signals. Keep each operation bounded.</td></tr>
+                <tr><td>Evidence</td><td>Application Insights, Log Analytics, Azure Monitor rules, availability testing, and workbook</td><td>Record requests and scenario traces, evaluate configured alert thresholds, and provide queryable evidence.</td></tr>
+                <tr><td>Investigation</td><td>An existing Azure SRE Agent, its identity, managed resource scope, and configured tools or connectors</td><td>Gather authorized context, compare hypotheses, and propose or perform actions only within effective permissions and policies.</td></tr>
+                <tr><td>Governance</td><td>Azure RBAC, monthly budget notifications, telemetry cap, and scheduled teardown Logic App</td><td>Limit access, monitor spend, and remove evaluation resources before unintended ongoing charges.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Provisioning is not integration</h3>
+          <p>The deployment script submits subscription-scoped Bicep, configures the telemetry cap, and publishes the Python Functions application. The template references the SRE Agent resource group as existing; it does not provision the agent itself. Resource creation also does not prove that the agent has a working Log Analytics connection, an enabled incident integration, or an approved response plan. Verify those separately before presenting an automated workflow.</p>
+          <h3>Do not confuse identities</h3>
+          <p>The public Function App uses its own managed identity for server-side telemetry and inventory reads. The deployment identity accesses package storage. The SRE Agent has its own user-assigned managed identity and managed-resource permissions. These principals are not interchangeable: a functioning public dashboard does not prove that the agent can query the same data. Neither identity's tokens should be returned to the public browser.</p>
+          <p class="source">Identity model: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/permissions">Agent permissions</a> [2]. User access is a separate layer: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/user-roles">User roles and permissions</a> [3].</p>
+        </section>
+        <section id="lifecycle">
+          <h2>3. Investigation lifecycle: from a signal to verified recovery</h2>
+          <figure id="agent-investigation-diagram" class="diagram" aria-labelledby="agent-investigation-title">
+            <h3 id="agent-investigation-title">Figure 2. A human-reviewed investigation and recovery sequence</h3>
+            <div class="diagram-chart" tabindex="0" role="region" aria-label="Scrollable SRE Agent investigation sequence diagram">
+              <pre class="mermaid">
+sequenceDiagram
+  actor Engineer
+  participant Agent as Azure SRE Agent
+  participant Tools as Authorized read tools
+  actor Owner as Approval and execution owner
+  participant Service as Target service
+  Engineer->>Agent: Investigate scenario, resources, and time window
+  Agent->>Tools: Query traces, requests, and available changes
+  Tools-->>Agent: Observations or explicit access and data gaps
+  alt Evidence is insufficient
+    Agent-->>Engineer: State unknowns and next safe diagnostic
+  else Evidence supports a hypothesis
+    Agent-->>Engineer: Cited hypothesis and proposed mitigation
+    Engineer->>Owner: Review exact change, risk, and rollback
+    opt Change is approved and authorized
+      Owner->>Service: Execute through the approved operational path
+      Engineer->>Agent: Recheck customer and telemetry signals
+      Agent->>Tools: Query fresh evidence
+      Tools-->>Agent: Post-change measurements
+      Agent-->>Engineer: Verified outcome or unresolved conditions
+    end
+  end
+              </pre>
+            </div>
+            <figcaption>This is the recommended evaluation workflow, not a record of an executed incident. The execution owner can use an approved manual process or a separately governed automation. The portal does not run this sequence.</figcaption>
+          </figure>
+          <div class="diagram-use">
+            <h3>How to use this sequence during a scenario</h3>
+            <p>For catalog latency, invoke <code>latency</code>, ask the agent to compare the three-second recorded wait with request P95, and require citations before accepting its diagnosis. If worker CPU is missing, the correct result is an explicit gap, not a claim of CPU saturation. After an approved real code change, repeat the same check and compare equivalent windows; the fixed-sleep simulation does not recover on its own.</p>
+          </div>
+          <ol>
+            <li>Establish the trigger and scope. An engineer can start a conversation, or an explicitly configured incident integration can initiate a workflow. Record resource scope, incident time, and the question being investigated.</li>
+            <li>Retrieve evidence. Query requests, traces, resource properties, and available change history. Align timestamps and operation identifiers before assuming that nearby events are causally related.</li>
+            <li>Compare hypotheses. Separate application faults, downstream failures, resource pressure, and recent changes. Record the evidence that would disprove each explanation.</li>
+            <li>Propose a bounded response. Identify the exact resource, expected benefit, operational risk, rollback method, and approval owner. Prefer a narrow mitigation over an unexplained broad restart.</li>
+            <li>Apply the effective governance controls. Resource permissions determine what is reachable; tool policies, hooks, connector controls, and run modes determine how a tool call is handled.</li>
+            <li>Validate independently. Requery the failure signal, repeat an appropriate customer-facing check, and verify that recovery did not merely move the problem elsewhere.</li>
+          </ol>
+          <p>For Azure Monitor incident intake, Microsoft documents a configured integration that scans alerts and consolidates repeated rule firings. An email Action Group alone is not that integration. Check that Azure Monitor is connected in the agent's incident-platform configuration, that the required identity permissions exist, and that a real alert fired. This portal does not verify those settings.</p>
+          <pre class="prompt">Investigate the selected scenario in rg-sre-demo during the last 24 hours.
+Use read-only tools. Return:
+1. Observed impact and resource scope.
+2. Evidence with timestamps, query references, and correlation identifiers.
+3. Ranked hypotheses, supporting observations, and counter-evidence.
+4. Missing telemetry and the next safe diagnostic.
+5. A proposed mitigation, approval owner, rollback, and recovery checks.
+Do not treat simulation labels or sample chart values as proven causes.
+Do not execute changes without the approved operational workflow.</pre>
+          <p class="source">Workflow sources: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/azure-monitor-alerts">Azure Monitor alerts</a> [4] and <a href="https://learn.microsoft.com/en-us/azure/sre-agent/run-modes">Run modes</a> [5].</p>
+        </section>
+        <section id="evidence">
+          <h2>4. Evidence engineering: keep observations separate from labels</h2>
+          <p>Each controlled scenario emits JSON into application traces with its name, severity, result status, elapsed duration where populated, item count, summary, expected root cause, and a scenario correlation ID. Workspace-based queries read these records from <code>AppTraces</code>; request volume and latency percentiles come from <code>AppRequests</code>.</p>
+          <p>The <code>expected_root_cause</code> field is a label supplied by the simulation author, not a conclusion independently established by the agent. Likewise, a scenario correlation ID should not be assumed to equal Application Insights <code>OperationId</code>. Confirm the actual linkage before joining records. A duration of zero in this trace means that the scenario did not populate an elapsed-duration measurement, not that the HTTP request took no time.</p>
+          <h3>Trace-level evidence for one scenario</h3>
+          <pre><code>AppTraces
+| where TimeGenerated &gt;= ago(24h)
+| where Message has '"eventType":"sre-demo-scenario"'
+| extend event = parse_json(Message)
+| where tostring(event.scenario) == "latency"
+| project TimeGenerated,
+    scenario=tostring(event.scenario),
+    statusCode=toint(event.status_code),
+    recordedDurationMs=toint(event.duration_ms),
+    simulationLabel=tostring(event.expected_root_cause),
+    correlationId=tostring(event.correlationId)
+| order by TimeGenerated desc</code></pre>
+          <h3>Request latency is a different measurement</h3>
+          <pre><code>AppRequests
+| where TimeGenerated &gt;= ago(24h)
+| summarize requests=count(),
+    failures=countif(Success == false),
+    p95RequestMs=percentile(DurationMs, 95)
+    by Name, bin(TimeGenerated, 5m)
+| order by TimeGenerated asc</code></pre>
+          <p>The second query groups by operation name so a reader can distinguish scenario requests from other portal traffic. Its P95 is computed from recorded requests; it must not be populated from the first query's single-event duration. Sampling, ingestion delay, missing instrumentation, and short windows can all weaken the result. Report those limitations rather than replacing absent measurements with zeros.</p>
+          <p>Agent action telemetry is another evidence stream. Microsoft documents querying the agent's Application Insights <code>customEvents</code> for tool executions, model calls, and approval decisions. These are not the workload's scenario traces. Use the agent's monitoring resource and its documented schema when auditing whether an investigation actually ran.</p>
+          <p class="source">Agent audit schema and examples: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/audit-agent-actions">Audit agent actions</a> [6].</p>
+        </section>
+        <section id="scenarios">
+          <h2>5. Applying the model to ten business risks</h2>
+          <p>Every scenario on the <a href="./portal#business-risk-scenarios">reliability dashboard</a> now has a component map, an illustrative three-panel dashboard, an investigation walkthrough, and report and KQL templates. The following matrix explains what the agent should establish and where this evaluation stops.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Scenario and components</th><th>Investigation objective</th><th>Evidence boundary and recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Checkout HTTP 500: Functions, Application Insights, Log Analytics</td><td>Locate failed requests, establish affected operations, and compare error timing with changes.</td><td>The function returns a synthetic 500; it does not throw a real checkout exception. Require actual exception evidence before naming an exception as proven cause.</td></tr>
+                <tr><td>Catalog latency: Functions and request telemetry</td><td>Compare request percentiles with recorded wait duration and separate local wait from downstream time.</td><td>The workload sleeps for about three seconds. It is not a deployed catalog or a CPU benchmark. Validate a real fix with request latency and failure rate.</td></tr>
+                <tr><td>Payment outage: Functions and optional dependency telemetry</td><td>Determine whether a downstream fault is supported by actual dependency calls and affected-caller evidence.</td><td>No payment service is deployed or called. HTTP 503 is synthetic; absence of dependency records is a limitation, not provider-outage proof.</td></tr>
+                <tr><td>Throttling: Functions and HTTP 429 telemetry</td><td>Compare observed rejections with traffic, policy, and retry evidence before recommending more capacity.</td><td>No API Management policy, quota counter, or retrying client is deployed. A generated 429 alone does not establish quota exhaustion.</td></tr>
+                <tr><td>Queue backlog: Storage Queue and a Functions producer</td><td>Check current queue depth, message age, and consumer existence; estimate drain time only with measured rates.</td><td>Each run enqueues 25 messages. No consumer exists. Trace item count is not queue depth, and remediation requires a separate consumer design.</td></tr>
+                <tr><td>Poison message: Storage Queue and malformed-data producer</td><td>Identify schema failure and propose bounded retries, quarantine, and controlled replay.</td><td>The producer writes invalid JSON but never processes it. There are no demonstrated dequeue failures, automatic poison queue, or replay results.</td></tr>
+                <tr><td>Memory pressure: Flex Consumption worker and traces</td><td>Distinguish temporary allocation from sustained growth using measured memory, concurrency, and restart evidence.</td><td>A temporary 24 MiB allocation is not an established leak or out-of-memory event. The sample working-set chart is illustrative.</td></tr>
+                <tr><td>CPU workload: Functions worker and duration evidence</td><td>Compare the bounded hashing loop with worker CPU and request latency if those measurements are available.</td><td>The two-second operation is CPU-bound but does not prove instance-wide or fleet-wide saturation. Profiling is a proposed next step.</td></tr>
+                <tr><td>Configuration drift: Function settings and desired-state baseline</td><td>Compare <code>SRE_DEMO_MODE</code> with <code>healthy</code> and attribute changes only with change-history evidence.</td><td>Rerun the drift scenario to validate HTTP 200. The general health endpoint does not check this setting and cannot prove recovery.</td></tr>
+                <tr><td>Deployment regression: Function package and release marker</td><td>Compare the release marker with the approved baseline and correlate real deployment events before recommending rollback.</td><td>The scenario always returns HTTP 500, even after a marker edit. No successful rollback can be demonstrated merely by changing the marker.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>These constraints make the evaluation more useful, not less: an agent that identifies missing instrumentation is behaving more reliably than one that invents dependency failures, CPU percentages, or recovery events. Evaluate the quality of the uncertainty statement as carefully as the proposed mitigation.</p>
+        </section>
+        <section id="reports">
+          <h2>6. Dashboards and Live Reports: three distinct surfaces</h2>
+          <p>The public portal, the Azure Monitor workbook, and SRE Agent Live Reports serve related but different purposes. The portal is a custom HTML experience backed by selected Functions APIs. The workbook is an Azure Monitor visualization. Live Reports are saved operational views created within SRE Agent from its available connected data. A link or prompt does not create a report or grant access to a new source.</p>
+          <p>Each scenario's sample dashboard compares Before, Incident, and Recovered states. These are teaching values, not historical samples, predictions, or measured agent outcomes. Requested production panels such as message age, CPU percentage, or payment success must remain <em>Not instrumented</em> until an authorized source supplies them.</p>
+          <figure id="agent-reports-diagram" class="diagram" aria-labelledby="agent-reports-title">
+            <h3 id="agent-reports-title">Figure 3. Create once, then refresh from connected evidence</h3>
+            <div class="diagram-chart" tabindex="0" role="region" aria-label="Scrollable SRE Agent Live Reports lifecycle diagram">
+              <pre class="mermaid">
+flowchart TB
+  request["Engineer describes dashboard and scope"] --> build["SRE Agent creates or edits a report"]
+  build -->|"Consumes active-flow AAUs"| saved["Saved Live Report layout and queries"]
+  sources["Already configured connectors and permissions"] --> build
+  saved --> reload["Viewer opens report or selects Reload"]
+  reload --> query["Retrieve authorized connector data"]
+  sources --> query
+  query --> available{"Metric available?"}
+  available -->|"No"| missing["Display Not instrumented or explicit error"]
+  available -->|"Yes"| analysis{"Model analysis requested?"}
+  analysis -->|"No"| charts["Update charts from connector results"]
+  analysis -->|"Yes"| model["Model-assisted analysis uses active-flow AAUs"]
+  model --> charts
+  sample["Illustrative portal sample numbers"] -.->|"Not investigation evidence; never substitute"| missing
+              </pre>
+            </div>
+            <figcaption>Connector-only refresh does not consume active-flow AAUs under the documented Live Reports behavior. Model-assisted refresh does; underlying service charges and connector caching still apply. The preview feature needs available connected data.</figcaption>
+          </figure>
+          <div class="diagram-use">
+            <h3>How to use this report workflow</h3>
+            <ol>
+              <li>Open a scenario on the reliability dashboard and expand its Live Report template. Paste that template into the connected SRE Agent.</li>
+              <li>Verify each panel against a real query. For queue backlog, show enqueue counts from traces separately from independently measured queue depth; leave message age unavailable if it is not collected.</li>
+              <li>Save the report, run another bounded scenario, and select Reload. Inspect freshness and Agent consumption; do not fill missing panels with the portal's sample numbers.</li>
+            </ol>
+          </div>
+          <pre class="prompt">Build a Live Report for the selected reliability scenario.
+Scope: the connected rg-sre-demo resources, last 24 hours.
+Include scenario trace counts, severity, latest status, and an evidence table.
+Add operation-filtered request failure rate and P95 only from AppRequests.
+Add queue or worker metrics only when a connected source actually exposes them.
+Mark unavailable panels "Not instrumented"; do not use portal sample numbers.
+Keep refresh connector-query-only; avoid model-assisted analysis on refresh.
+Save the layout and verify it with a new scenario run and Reload.</pre>
+          <p>Microsoft labels Live Reports as preview. The current guidance distinguishes creation and editing, which consume active-flow AAUs, from connector-only refreshes, which do not consume active-flow AAUs. Model-assisted refresh analysis does consume active-flow AAUs. That distinction is not a promise that the underlying Azure services or all report activity are free. Reports can also use cached connector results, so record freshness when presenting a time-sensitive investigation.</p>
+          <p class="source">Behavior, prerequisites, preview status, caching, and billing boundaries: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/live-reports">Live Reports</a> [7].</p>
+        </section>
+        <section id="governance">
+          <h2>7. Identity, authorization, and approval are separate controls</h2>
+          <p>The safest operating model does not rely on a prompt saying "be careful." It combines explicit resource scope, appropriate user roles, tool restrictions, review procedures, and independently inspectable audit records.</p>
+          <figure id="agent-governance-diagram" class="diagram" aria-labelledby="agent-governance-title">
+            <h3 id="agent-governance-title">Figure 4. Access and effective tool decisions are separate gates</h3>
+            <div class="diagram-chart" tabindex="0" role="region" aria-label="Scrollable SRE Agent authorization and governance diagram">
+              <pre class="mermaid">
+flowchart TB
+  request["Requested tool and exact arguments"] --> access{"User role and resource authorization permit access?"}
+  access -->|"No"| blocked["Block or request approved temporary access"]
+  access -->|"Yes"| controls["Evaluate effective hooks, tool policies, connector requirements, and run mode"]
+  controls --> decision{"Effective tool decision"}
+  decision -->|"Deny"| denied["Do not execute"]
+  decision -->|"Ask"| approval["Authorized approver reviews this invocation"]
+  decision -->|"Allow"| execution["Execute within actual resource permissions"]
+  approval -->|"Approve"| execution
+  approval -->|"Reject"| denied
+  execution --> audit["Retain tool, decision, and outcome evidence"]
+  denied --> audit
+  blocked --> audit
+              </pre>
+            </div>
+            <figcaption>This is a conceptual separation of access from tool decisions, not the service's internal evaluation order. Effective hooks and policies can change whether approval is required; they do not create missing Azure or connector permissions.</figcaption>
+          </figure>
+          <div class="diagram-use">
+            <h3>How to use these gates before enabling writes</h3>
+            <p>Start with a read-only investigation. For configuration drift, have the agent propose the exact <code>SRE_DEMO_MODE</code> correction without applying it. Review the identity, target, effective policies, hooks, and automation run mode; authorize the change through your operational process. Then rerun <code>config-drift</code> to validate HTTP 200 and review the audit trail. Do not treat a request for approval as proof that every other tool is equally constrained.</p>
+          </div>
+          <ul>
+            <li>User roles govern what a person can do with SRE Agent. Microsoft distinguishes Reader, Standard User, Author, and Administrator. An Azure subscription role should not be assumed to supply all SRE Agent data-plane capabilities.</li>
+            <li>Agent permissions govern the managed identity's access to Azure resources. Review effective roles and scope rather than inferring them from a friendly permission-level label. Microsoft's documented alert lifecycle integration includes subscription-level Monitoring Contributor requirements.</li>
+            <li>Run modes govern approval behavior for response plans and scheduled tasks, with an agent-level fallback. Set and verify the mode on the specific automation. Do not assume every newly created plan inherits the safety posture you intended.</li>
+            <li>Tool access policies add allow, ask, and deny decisions. Under the documented policy evaluation, an allow can bypass an ask; a globally denied tool cannot simply be enabled by a narrower allow.</li>
+            <li>Hooks add another governance layer. The tool-policy documentation describes user-defined hook allows that can override lower-level policy decisions, including a global deny. Treat hook authorship and configuration changes as privileged operations.</li>
+          </ul>
+          <p class="callout">Review mode is not a universal "approve every side effect" switch. Microsoft's guidance distinguishes Azure infrastructure operations from other actions, and policy or hook decisions can change the approval path. Inspect the complete effective configuration, restrict write access, and test the actual tool workflow before connecting production.</p>
+          <p>For this evaluation, start with authorized read access and no automatic remediation. A proposed change should identify the exact command or tool arguments, its owner, expected impact, and rollback. Keep sensitive settings, message contents, and raw tool outputs out of the public portal. Workload data and connected documents are evidence to evaluate, not authority to override operational policy.</p>
+          <p class="source">Read together: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/user-roles">User roles</a> [3], <a href="https://learn.microsoft.com/en-us/azure/sre-agent/permissions">agent permissions</a> [2], <a href="https://learn.microsoft.com/en-us/azure/sre-agent/run-modes">run modes</a> [5], <a href="https://learn.microsoft.com/en-us/azure/sre-agent/tool-access-policies">tool access policies</a> [8], and <a href="https://learn.microsoft.com/en-us/azure/sre-agent/agent-hooks">agent hooks</a> [9].</p>
+        </section>
+        <section id="extensions">
+          <h2>8. Extensibility: connect evidence before adding autonomy</h2>
+          <p>The product overview describes skills, custom agents, Python tools, MCP servers, and hooks as extension points. Use them to close a specific operational gap rather than to expand the tool surface without a purpose. For example, a source repository connection can add release context; an observability connector can expose a missing dependency metric; a specialized workflow can constrain a repeatable diagnostic.</p>
+          <p>MCP exposes external capabilities as tools. Connecting a server therefore changes both what the agent can learn and what it may be able to do. Review the endpoint, credentials, returned data, individual tool permissions, and operational ownership. A read-only Azure identity does not automatically make an external connector read-only.</p>
+          <figure id="agent-specialists-diagram" class="diagram" aria-labelledby="agent-specialists-title">
+            <h3 id="agent-specialists-title">Figure 5. Optional custom-agent design for specialized investigations</h3>
+            <div class="diagram-chart" tabindex="0" role="region" aria-label="Scrollable optional SRE custom-agent design diagram">
+              <pre class="mermaid">
+flowchart TB
+  incident["Scoped incident question"] --> coordinator["Configured SRE Agent workflow"]
+  coordinator -.->|"Optional specialization"| application["Application diagnostics custom agent"]
+  coordinator -.->|"Optional specialization"| capacity["Capacity diagnostics custom agent"]
+  coordinator -.->|"Optional specialization"| change["Change diagnostics custom agent"]
+  application --> apptools["Permitted request and dependency queries"]
+  capacity --> capacitytools["Permitted worker and queue measurements"]
+  change --> changetools["Permitted configuration and release evidence"]
+  apptools --> findings["Evidence with citations and explicit unknowns"]
+  capacitytools --> findings
+  changetools --> findings
+  findings --> owner["Service owner reviews one incident narrative"]
+              </pre>
+            </div>
+            <figcaption>An illustrative custom-agent design, not three agents deployed by this project or a guarantee of automatic routing. Each specialization needs configuration, useful connected data, effective tool controls, and an operational owner.</figcaption>
+          </figure>
+          <div class="diagram-use">
+            <h3>When to use specialized agents</h3>
+            <p>Begin with one agent and the ten scenario prompts. Add a custom agent only when a repeated diagnostic needs distinct instructions, tools, or ownership. For example, a capacity specialist could compare memory, CPU, and queue signals once those measurements exist. Test it against the known simulation limits and preserve the same approval and evidence requirements; specialization does not supply missing telemetry or broader permissions.</p>
+          </div>
+          <p>None of the payment, retry, queue-consumer, or worker-profile gaps in the scenario catalog disappears because an agent supports extensions. Instrument or implement the missing system, connect it with authorized access, and then verify that the agent can retrieve its evidence. Only then evaluate whether a narrow, repeatable response is suitable for automation.</p>
+          <p class="source">Extension model: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/overview">Overview</a> [1]. External data and tools: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/mcp-connectors">MCP connectors and tools</a> [10].</p>
+        </section>
+        <section id="cost">
+          <h2>9. Cost engineering and evaluation lifecycle</h2>
+          <p>Microsoft distinguishes always-on usage for an existing agent from active-flow usage for agent work. Token usage and model-specific rates influence active-flow consumption. Deleting a chat thread or simply leaving the agent idle is not the same as deleting the billable agent resource. Verify current pricing, eligibility, and regional availability before committing to an evaluation.</p>
+          <p>This repository's <a href="./cost">cost planner</a> uses explicit planning assumptions: a new-customer trial for fixed charges, a 500-AAU active-flow allocation, supporting Azure spend, and a $100 monthly target. Those are evaluation assumptions, not a production price guarantee. Budget notifications are alerts, not a hard spending stop. A daily ingestion cap can also affect evidence availability and should not be treated as an infallible instantaneous cost ceiling.</p>
+          <p>The teardown workflow is scheduled before the intended trial boundary and has deletion permissions on the evaluation groups. Its success must be observed: check the workflow result and actual resource removal, and retain a manual cleanup owner. Do not rerun the full infrastructure deployment merely to publish a documentation update, because the deployment script computes a new teardown timestamp.</p>
+          <p class="source">Authoritative billing model and current usage guidance: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/pricing-billing">Pricing and billing</a> [11]. Report-specific active-flow behavior: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/live-reports#usage-and-costs">Live Reports usage and costs</a> [7].</p>
+        </section>
+        <section id="evaluation">
+          <h2>10. Evaluate evidence quality before promising autonomous recovery</h2>
+          <p>Run a controlled, human-reviewed evaluation with the same incident questions used by your current responders. Record the start time, resources in scope, available telemetry, tools called, approvals, investigation output, and any performed action. Compare equivalent windows and instrumentation; an uninstrumented scenario is not a fair measure of root-cause accuracy.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Measure</th><th>Evidence to collect</th><th>Acceptance approach</th></tr></thead>
+              <tbody>
+                <tr><td>Time to useful evidence</td><td>Elapsed time to the first cited observation that narrows the incident</td><td>Compare with a documented human baseline, not an invented percentage improvement.</td></tr>
+                <tr><td>Diagnostic quality</td><td>Correct observations, supported hypotheses, counter-evidence, and explicit unknowns</td><td>Reject fabricated metrics and claims based solely on the simulation's root-cause label.</td></tr>
+                <tr><td>Governance correctness</td><td>Effective identities, tool decisions, approvals, and agent audit records</td><td>Verify allowed diagnostics and blocked or reviewed write paths in the intended configuration.</td></tr>
+                <tr><td>Recovery validity</td><td>Customer-facing checks and before/after measurements for an actually performed change</td><td>Do not count sample charts, a healthy generic endpoint, or a release-marker edit as successful recovery.</td></tr>
+                <tr><td>Operational cost</td><td>Active-flow usage, underlying service spend, and evidence-retention cost</td><td>Agree a budget and cleanup owner before increasing automation or report frequency.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Adopt in stages: establish telemetry and read access; validate manual investigations; create stable reports; connect incident intake with explicit scope and review settings; then consider narrowly bounded automation with a tested rollback and a responsible owner. This sequence is an engineering recommendation for the evaluation, not a claim that production is safe by default.</p>
+          <p>The success criterion is a defensible operational decision: what happened, how the evidence supports it, what remains unknown, who may act, and how recovery will be verified. An agent that produces that record can reduce coordination friction without replacing service ownership.</p>
+        </section>
+        <section id="setup">
+          <h2>11. Configure this Agent: code, logs, resources, and knowledge</h2>
+          <p>The native onboarding warning means the agent lacks connected application context. This portal cannot dismiss that warning or configure credentials for you. Open <a href="https://sre.azure.com/agents/subscriptions/26081847-0bf1-4c5a-84f5-f18dd3902200/resourceGroups/rg-sre-agent/providers/Microsoft.App/agents/msdn-sre-agent">msdn-sre-agent in Azure SRE Agent</a> and use its setup cards. A useful minimum is code plus a working log source; resource access and curated knowledge improve the investigation.</p>
+          <p class="callout">Configuration snapshot, October 14, 2026: the demo resource group is registered with Reader access, and the Application Insights and Log Analytics connectors were saved successfully. The project README was uploaded and retrieved by native knowledge search. GitHub authorization is pending because its OAuth popup was blocked; the owner chose to defer it. This is a recorded setup result, not a live health check or proof of end-to-end query success. Keep Review mode enabled. Incident integration remains optional and unconfigured.</p>
+          <p><strong>Recorded read-only validation, October 14, 2026, 17:57 UTC:</strong> the Agent queried the last 24 hours through <code>system-mcp-monitor</code> and returned 6,949 <code>AppTraces</code> rows (latest 17:55:46 UTC) and 483 <code>AppRequests</code> rows (latest 17:55:29 UTC). It also retrieved the README's configuration section from knowledge search. These are historical observations, not live dashboard values. This verifies the built-in Azure Monitor query path; independent health of the two named setup connectors was not established. The first tool call omitted the subscription and returned HTTP 400; the retry succeeded after supplying it explicitly.</p>
+          <div class="table-wrap">
+            <table aria-label="Agent context configuration">
+              <thead><tr><th>Context</th><th>Demo target and configuration</th><th>Verify before investigation</th></tr></thead>
+              <tbody>
+                <tr><td>Code</td><td>Connect repositories &gt; GitHub. Enter <a href="https://github.com/KrishnaDistributedcomputing/azure-sre-agent-demo">KrishnaDistributedcomputing/azure-sre-agent-demo</a>, complete native OAuth, review the requested access, and add the repository.</td><td>Wait for indexing; ask the agent to cite the scenario implementation in <code>function_app.py</code>. Remote main does not include unpublished local edits. If the popup is blocked, allow it for the native Agent flow; do not paste CLI tokens into the portal.</td></tr>
+                <tr><td>Application Insights</td><td>Connect logs &gt; Application Insights. Name: <code>sre-demo-application-insights</code>. Component: <code>appi-sredemo-be3wpifmuf</code> in <code>rg-sre-demo</code>.</td><td>Use the agent's operational managed identity. Confirm this workload connector, not just the Agent service's own diagnostic telemetry.</td></tr>
+                <tr><td>Log Analytics</td><td>Connect more &gt; Log Analytics Workspace. Name: <code>sre-demo-log-analytics</code>. Workspace: <code>log-sredemo-be3wpifmuf</code> in <code>rg-sre-demo</code>. Resolve the exact ARM ID if the picker cannot find it.</td><td>Query <code>AppTraces</code> and <code>AppRequests</code>. Check the time window, table, and returned timestamps; an empty result is not evidence of a healthy workload.</td></tr>
+                <tr><td>Azure resources</td><td>Add resource group &gt; <code>rg-sre-demo</code> &gt; Reader. Operational identity: <code>msdn-sre-agent-aaxceouyeq3aw</code>.</td><td>Confirm Reader, Monitoring Reader, Log Analytics Reader, Workbook Reader, and Storage Blob Data Reader on this group. No Contributor role is needed for these diagnostics.</td></tr>
+                <tr><td>Knowledge files</td><td>Add file: use the project's README and reviewed scenario or operational runbooks. Upload updated copies after meaningful changes.</td><td>Confirm saved/indexed state and request a citation. Never upload secrets, tokens, local settings, deployment credentials, or invented incident history. An uploaded source file is not a repository connection.</td></tr>
+                <tr><td>Incidents (optional)</td><td>Connect an approved incident platform only after choosing ownership, resource scope, escalation, and Review-mode behavior.</td><td>Only one incident platform can be active at a time. Do not replace an existing integration or enable autonomous remediation just to complete an onboarding checklist.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Repeatable, scoped read-access configuration</h3>
+          <p>The repository's <code>scripts\Configure-AgentContext.ps1</code> resolves the existing agent's operational identity and checks the five read roles. It inspects by default; <code>-Apply</code> adds only missing assignments on the demo group. PowerShell 7, Azure CLI sign-in, and role-assignment permissions are required for application. Full deployments invoke this step before publishing, but an existing evaluation should use this script directly to preserve its teardown deadline.</p>
+          <pre><code># Check only
+.\scripts\Configure-AgentContext.ps1 -SubscriptionId 26081847-0bf1-4c5a-84f5-f18dd3902200
+# Preview missing assignments, then apply if approved
+.\scripts\Configure-AgentContext.ps1 -SubscriptionId 26081847-0bf1-4c5a-84f5-f18dd3902200 -Apply -WhatIf
+.\scripts\Configure-AgentContext.ps1 -SubscriptionId 26081847-0bf1-4c5a-84f5-f18dd3902200 -Apply</code></pre>
+          <p>Check <code>ReadAccessReady</code> and <code>MissingRoles</code>. The output deliberately reports <code>NativeConnectionsVerified: false</code>: RBAC does not register native setup connections, authorize GitHub, index documents, or prove that the agent successfully queried telemetry. The script does not change run mode, AAU limits, or teardown scheduling.</p>
+          <h3>Validate the whole evidence path</h3>
+          <p>Submit one bounded read-only investigation after saving the connections. A successful result must identify the actual tools, resource scope, query window, and returned evidence; treat permission errors, indexing delays, and no-data results as explicit blockers.</p>
+          <pre class="prompt">Read-only setup validation for rg-sre-demo. Do not change resources or settings.
+Subscription: 26081847-0bf1-4c5a-84f5-f18dd3902200.
+Pass subscription explicitly to Azure Monitor tool calls.
+List the configured code and telemetry sources. If GitHub is connected, cite
+the http-500 implementation in function_app.py; otherwise report code pending.
+Use sre-demo-log-analytics to query AppTraces and AppRequests for the last 24h,
+return row counts and latest timestamps, and identify the workspace and KQL used.
+Distinguish synthetic scenario labels from proven root causes. If a connector
+or permission fails, report the exact blocker; do not infer missing measurements.</pre>
+          <pre><code>union withsource=SourceTable AppTraces, AppRequests
+| where TimeGenerated &gt; ago(24h)
+| summarize Rows=count(), Latest=max(TimeGenerated) by SourceTable</code></pre>
+          <p>When code is connected, compare the agent's cited implementation with the <a href="./portal#business-risk-scenarios">scenario playbooks</a>. For example, HTTP failures are synthetic responses, queue scenarios have no consumer, and the deployment-regression marker does not implement recovery. Do not claim a successful diagnosis or remediation from green connection cards alone.</p>
+          <p class="source">Setup guidance: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/complete-setup">Complete setup</a>, <a href="https://learn.microsoft.com/en-us/azure/sre-agent/connect-source-code">Connect source code</a>, <a href="https://learn.microsoft.com/en-us/azure/sre-agent/connect-telemetry-source">Connect telemetry</a>, and <a href="https://learn.microsoft.com/en-us/azure/sre-agent/upload-knowledge-document">Upload knowledge documents</a>.</p>
+        </section>
+        <section id="skills-guide">
+          <h2>12. Configure skills: illustrated GitHub walkthrough</h2>
+          <p>Follow the <a href="https://github.com/KrishnaDistributedcomputing/azure-sre-agent-demo/blob/main/docs/sre-agent-configuration-and-skills.md">detailed configuration and skills guide on GitHub</a> for prerequisites, resource scope, GitHub OAuth, workload telemetry, knowledge indexing, a complete example skill, tool selection, enablement, validation, and troubleshooting. The screenshots below were captured from the native Agent interface on October 14, 2026; they are documentation, not live status panels.</p>
+          <ol>
+            <li>Register only the approved workload group with Reader access. Confirm the operational identity and effective RBAC scope.</li>
+            <li>Connect code and workload logs, then upload reviewed knowledge. Verify actual queries and citations rather than relying on onboarding cards.</li>
+            <li>Open <strong>Build + setup &gt; Extensions &gt; Skill builder &gt; Create skill</strong> in the current preview UI. Microsoft Learn may call this <strong>Builder &gt; Skills</strong>.</li>
+            <li>Give the skill a specific trigger description and edit its <code>SKILL.md</code> procedure. Attach only the authorized tools it needs; read-only guidance does not itself prevent write tools.</li>
+            <li>Save and verify the entry, then use <strong>Extensions &gt; Skills &gt; Custom skills</strong> to enable it and save changes where required. Test a relevant question and inspect skill activation and actual tool results.</li>
+          </ol>
+          <figure class="setup-shot">
+            <a href="https://raw.githubusercontent.com/KrishnaDistributedcomputing/azure-sre-agent-demo/main/docs/images/sre-setup/01-managed-resources.png"><img src="https://raw.githubusercontent.com/KrishnaDistributedcomputing/azure-sre-agent-demo/main/docs/images/sre-setup/01-managed-resources.png" alt="Native Managed resources screen listing the approved rg-sre-demo resource group" loading="lazy"></a>
+            <figcaption>Resource registration: the saved group establishes scope, not proof of a successful query. Open the image for a larger view.</figcaption>
+          </figure>
+          <figure class="setup-shot">
+            <a href="https://raw.githubusercontent.com/KrishnaDistributedcomputing/azure-sre-agent-demo/main/docs/images/sre-setup/02-telemetry-connectors.png"><img src="https://raw.githubusercontent.com/KrishnaDistributedcomputing/azure-sre-agent-demo/main/docs/images/sre-setup/02-telemetry-connectors.png" alt="Native telemetry list showing Application Insights and Log Analytics as Connected" loading="lazy"></a>
+            <figcaption>Workload telemetry: both entries show Connected. The earlier recorded query independently verified the built-in Azure Monitor path, not execution through each named connection.</figcaption>
+          </figure>
+          <figure class="setup-shot">
+            <a href="https://raw.githubusercontent.com/KrishnaDistributedcomputing/azure-sre-agent-demo/main/docs/images/sre-setup/03-create-skill-draft.png"><img src="https://raw.githubusercontent.com/KrishnaDistributedcomputing/azure-sre-agent-demo/main/docs/images/sre-setup/03-create-skill-draft.png" alt="Example skill authoring form for sre-demo-evidence-triage with read-only procedural guidance" loading="lazy"></a>
+            <figcaption>Skill authoring example: copy the complete procedure from the GitHub guide, review attached tools, save, enable, and test it. No example custom skill is left installed by this documentation update.</figcaption>
+          </figure>
+          <h3>Skills, knowledge, and specialists are different</h3>
+          <p>A skill is a reusable procedure with optional tools; the Agent loads relevant skills automatically. A knowledge file is searchable reference content without attached tools. A custom agent is an explicitly invoked specialist and can restrict accessible skills through <code>allowed_skills</code>. Adding a repository or committing a local skill file does not automatically deploy a native SRE Agent skill.</p>
+          <p>Start with a read-only evidence-triage procedure. A larger skill set can add queue assessment, configuration comparison, and report validation, but each needs an owner, a clear trigger, approved tools, and a tested evidence boundary. The service currently documents up to five concurrently active skills; this is not the same as the total number of enabled skills.</p>
+          <p class="callout">GitHub OAuth for the demo Agent remains pending. Incident intake remains optional and unconfigured. This guide does not enable autonomous response, grant new write permissions, or install skills automatically. Keep the existing Review-mode safeguards and teardown deadline.</p>
+          <p class="source">Official skill model, authoring, tool attachments, specialist selection, and limits: <a href="https://learn.microsoft.com/en-us/azure/sre-agent/skills">Skills in Azure SRE Agent</a>.</p>
+        </section>
+        <section id="references">
+          <h2>13. Microsoft Learn references</h2>
+          <p>These links point to the official documentation used to ground the product descriptions. The architectural analysis and evaluation recommendations above are original guidance for this portal. Features, UI names, preview status, policy precedence, and pricing can change; recheck the relevant source before implementation.</p>
+          <ol class="references">
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/overview">Overview of Azure SRE Agent</a>: product scope, investigation patterns, and extension points.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/permissions">Agent permissions</a>: managed identity, permission levels, resource scope, and temporary authorization.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/user-roles">User roles and permissions</a>: Reader, Standard User, Author, and Administrator responsibilities.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/azure-monitor-alerts">Azure Monitor alerts</a>: incident integration, alert scanning, and required access.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/run-modes">Run modes</a>: Review, Autonomous, per-automation configuration, and approval boundaries.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/audit-agent-actions">Audit agent actions</a>: Application Insights events and investigation audit queries.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/live-reports">Live Reports (preview)</a>: creation, connected data, saved layouts, refresh, and usage.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/tool-access-policies">Tool access policies</a>: scopes, precedence, and interaction with approval controls.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/agent-hooks">Agent hooks</a>: lifecycle checkpoints and policy enforcement considerations.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/mcp-connectors">MCP connectors and tools</a>: external tool discovery, integration, and connectivity.</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/sre-agent/pricing-billing">Pricing and billing</a>: always-on and active-flow usage, AAU metering, and cost controls.</li>
+          </ol>
+        </section>
+      </article>
+    </div>
+    <footer>Original technical analysis for the Azure SRE Agent evaluation portal. Sample scenarios are controlled simulations, not production incident evidence.</footer>
+  </main>
+  <script type="module">
+    const status = document.querySelector("#diagram-status");
+    try {
+      const { default: mermaid } = await import("https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs");
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: "strict",
+        theme: "base",
+        themeVariables: {
+          primaryColor: "#edf8fc",
+          primaryTextColor: "#102a43",
+          primaryBorderColor: "#007da8",
+          lineColor: "#3d62c9",
+          secondaryColor: "#eef1ff",
+          tertiaryColor: "#fff7e5",
+          clusterBkg: "#f7fbfd",
+          clusterBorder: "#c6dae6",
+          fontFamily: "Inter, Segoe UI, sans-serif"
+        },
+        flowchart: { curve: "basis", htmlLabels: false, useMaxWidth: true },
+        sequence: { useMaxWidth: true, wrap: true }
+      });
+      await mermaid.run({ querySelector: ".mermaid" });
+      status.textContent = "Five diagrams loaded. On small screens, scroll diagrams horizontally. Read the practical usage guidance below each figure.";
+    } catch (error) {
+      console.error("SRE Agent diagrams could not be rendered.", error);
+      status.setAttribute("role", "alert");
+      status.textContent = "Diagrams could not be rendered. Check access to the Mermaid CDN, then reload. Diagram captions and usage instructions remain available.";
+    }
+  </script>
+</body>
+</html>

@@ -52,12 +52,10 @@
     .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 18px; margin-bottom: 15px; }
     h2 { margin: 0; font-size: 19px; }
     .panel-note { color: var(--muted); font-size: 11px; }
-    .topology { display: grid; grid-template-columns: repeat(4, 1fr); align-items: stretch; gap: 28px; }
-    .layer { position: relative; padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
-    .layer:not(:last-child)::after { content: "›"; position: absolute; right: -20px; top: 50%; translate: 0 -50%; color: var(--cyan); font-size: 31px; }
-    .layer-label { color: var(--cyan); font-size: 9px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
-    .layer h3 { margin: 7px 0 9px; font-size: 15px; }
-    .layer p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .architecture-diagram { margin: 0; overflow-x: auto; }
+    .architecture-diagram .mermaid { min-width: 1080px; margin: 0; padding: 16px; border-radius: 13px; background: #fff; text-align: center; }
+    .architecture-diagram svg { max-width: none !important; height: auto; }
+    .architecture-diagram figcaption { margin-top: 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
     .layout { display: grid; grid-template-columns: .8fr 2.2fr; gap: 16px; }
     .distribution { display: grid; gap: 13px; }
     .distribution-row { display: grid; gap: 6px; }
@@ -94,8 +92,7 @@
     @media (max-width: 680px) {
       header, nav, footer { display: block; }
       .links, .refresh { margin-top: 14px; }
-      .metrics, .cards, .support-grid, .filters, .topology { grid-template-columns: 1fr; }
-      .layer:not(:last-child)::after { content: "⌄"; right: 50%; top: auto; bottom: -25px; translate: 50% 0; }
+      .metrics, .cards, .support-grid, .filters { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -106,7 +103,7 @@
       <div class="links">
         <a class="nav-link" href="./portal">Reliability dashboard</a>
         <a class="nav-link" href="./cost">Cost planner</a>
-        <a class="nav-link" href="./partner">Partner requirements</a>
+        <a class="nav-link" href="./sre-deep-dive">SRE Agent deep dive</a>
       </div>
     </nav>
 
@@ -125,15 +122,47 @@
 
     <section class="panel">
       <div class="panel-head">
-        <h2>How the deployed architecture works</h2>
-        <span class="panel-note">Four connected capability layers</span>
+        <h2 id="architecture-heading">SRE Agent deployment and execution architecture</h2>
+        <span class="panel-note">Provisioning, telemetry, investigation, and governance</span>
       </div>
-      <div class="topology">
-        <article class="layer"><div class="layer-label">Experience</div><h3>Public portals and workbook</h3><p>Business, reliability, cost, component, and Azure Monitor views communicate the evidence.</p></article>
-        <article class="layer"><div class="layer-label">Compute and AI</div><h3>Functions and SRE Agent</h3><p>Serverless APIs generate safe scenarios while SRE Agent supports investigation.</p></article>
-        <article class="layer"><div class="layer-label">Evidence</div><h3>Insights and Log Analytics</h3><p>Application telemetry is collected, correlated, queried, and converted into alerts.</p></article>
-        <article class="layer"><div class="layer-label">Control</div><h3>Storage, identity, and guardrails</h3><p>Queues, managed identity, RBAC, budgets, and teardown keep the evaluation bounded.</p></article>
-      </div>
+      <figure class="architecture-diagram" aria-labelledby="architecture-heading">
+        <pre class="mermaid">
+flowchart LR
+  subgraph deployment["Deployment path"]
+    direction TB
+    owner["Deployment owner"] --> deploy["Deploy-Demo.ps1"]
+    deploy --> bicep["Bicep orchestration"]
+    deploy --> package["Function deployment package"]
+    package --> container["Private blob container"]
+    container --> function["Azure Function App"]
+    bicep --> demo["Demo resource group"]
+    owner --> agentGroup["Existing SRE Agent resource group"]
+    bicep --> guardrails["Guardrail resource group"]
+    demo --> function
+    agentGroup --> agent["Azure SRE Agent"]
+    guardrails --> controls["Budget and day-29 teardown"]
+  end
+
+  subgraph execution["Execution and investigation path"]
+    direction TB
+    operator["Scenario operator"] --> scenarios["Controlled scenario APIs"]
+    scenarios --> queue["Storage queue"]
+    scenarios --> insights["Application Insights"]
+    insights --> logs["Log Analytics workspace"]
+    logs --> alerts["Azure Monitor alerts"]
+    alerts -->|"When incident integration is configured"| agent
+    logs -->|"Authorized queries"| agent
+    agent --> investigations["Investigations and Live Reports"]
+    viewer["Business and operations users"] --> experiences["Public portals and workbook"]
+    experiences --> logs
+  end
+
+  function --> scenarios
+  controls -. "governs" .-> demo
+  controls -. "governs" .-> agentGroup
+        </pre>
+        <figcaption>Solid arrows show deployment or execution flow. Dotted arrows show cost and lifecycle governance. Public portal queries use the Function App managed identity and read-only Azure access.</figcaption>
+      </figure>
     </section>
 
     <div class="layout">
@@ -275,6 +304,10 @@
       $("#error").style.display = "none";
       try {
         const response = await fetch("./resources-data", { cache: "no-store" });
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.toLowerCase().includes("application/json")) {
+          throw new Error(`The inventory endpoint returned a non-JSON response (HTTP ${response.status}). Open /api/resources on the Function App, or run Azure Functions Core Tools locally with func start and open /api/resources. A static HTML server cannot serve the inventory API.`);
+        }
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
         inventory = payload;
@@ -295,6 +328,30 @@
     $("#refresh").addEventListener("click", loadInventory);
     ["#search", "#group-filter", "#category-filter"].forEach(selector => $(selector).addEventListener("input", renderComponents));
     loadInventory();
+  </script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: {
+        primaryColor: "#edf8fc",
+        primaryTextColor: "#102a43",
+        primaryBorderColor: "#007da8",
+        lineColor: "#3d62c9",
+        secondaryColor: "#eef1ff",
+        tertiaryColor: "#fff7e5",
+        clusterBkg: "#f7fbfd",
+        clusterBorder: "#c6dae6",
+        fontFamily: "Inter, Segoe UI, sans-serif"
+      },
+      flowchart: {
+        curve: "basis",
+        htmlLabels: false,
+        useMaxWidth: false
+      }
+    });
   </script>
 </body>
 </html>

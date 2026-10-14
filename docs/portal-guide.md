@@ -24,7 +24,7 @@ The experience has four pages:
 * [Reliability dashboard](https://sredemo-be3wpifmuf.azurewebsites.net/api/portal)
 * [Evaluation cost planner](https://sredemo-be3wpifmuf.azurewebsites.net/api/cost)
 * [Azure component command center](https://sredemo-be3wpifmuf.azurewebsites.net/api/resources)
-* [Partner governance command center](https://sredemo-be3wpifmuf.azurewebsites.net/api/partner)
+* [SRE Agent technical deep dive](https://sredemo-be3wpifmuf.azurewebsites.net/api/sre-deep-dive)
 
 None of the pages requires a browser login. The reliability API queries the demo Log
 Analytics workspace through the Function App managed identity. The cost planner
@@ -34,10 +34,43 @@ The component command center queries Azure Resource Graph every five minutes.
 The Function App managed identity has Reader access only on the demo, SRE Agent,
 and guardrail resource groups.
 
-The partner governance command center presents the mandatory customer
-engagement, technical decision, implementation, security, cost, operations,
-handover, acceptance, and exception requirements. It includes the evidence
-baseline for all 23 top-level and supporting Azure components.
+The technical deep dive explains deployment boundaries, evidence-based
+investigations, all ten scenario applications, dashboards, identity, approval
+controls, extensibility, costs, and adoption. It includes contextual citations
+and eleven verified Microsoft Learn references. Use its contents navigation to
+jump to a topic, or your browser's print command to save a PDF.
+
+Five Mermaid diagrams explain the Agent architecture, investigation sequence,
+Live Report lifecycle, governance gates, and an optional custom-agent design.
+Each diagram includes practical usage guidance and a caption distinguishing
+configured capabilities from illustrative workflows. On small screens, scroll
+the diagrams horizontally. Captions and usage guidance remain available if
+diagram rendering is unavailable.
+
+### Configure the Agent's application context
+
+The [illustrated GitHub walkthrough](sre-agent-configuration-and-skills.md)
+covers native configuration and adding skill sets, with captured resource,
+telemetry, and skill-authoring screens. The technical paper's
+[skills section](https://sredemo-be3wpifmuf.azurewebsites.net/api/sre-deep-dive#skills-guide)
+shows the same screenshots and links to the detailed guide.
+
+Use [Configure this Agent](https://sredemo-be3wpifmuf.azurewebsites.net/api/sre-deep-dive#setup)
+in the technical paper for native Code, Logs, Azure resources, Knowledge files,
+and optional Incidents setup. It includes the actual demo targets, official
+setup references, a validation query, and a bounded read-only investigation
+prompt. Its recorded configuration snapshot is not a live connector health test.
+
+The [read-access script](../scripts/Configure-AgentContext.ps1) checks the existing
+Agent's operational identity and five scoped read roles. It defaults to inspection;
+`-Apply -WhatIf` previews grants and `-Apply` adds missing assignments.
+Run it separately for an existing evaluation instead of redeploying infrastructure,
+which would recompute the teardown date. Full deployments invoke it automatically.
+
+RBAC alone does not complete native onboarding. Connect repositories through
+approved OAuth, save workload telemetry connections, register the resource group,
+and verify document indexing. Keep Review mode and do not upload credentials.
+The deployed portal can include local changes not yet present on GitHub main.
 
 > [!IMPORTANT]
 > Every incident displayed by the portal is a controlled simulation. Do not
@@ -122,6 +155,31 @@ Select a scenario card to open its investigation story. Each story contains:
 * A sequenced investigation path
 * Recommended remediation
 * A measurable definition of recovery
+
+Each scenario also includes an Azure component responsibility map, three sample
+metric panels, and a step-by-step SRE Agent walkthrough. The panels compare
+illustrative before, incident, and recovered states. They are not live
+measurements, executed recoveries, or Agent-generated findings. Each chart uses
+its own scale and displays its metric units.
+
+Read the evidence boundary before presenting a scenario. For example, payment
+failures and throttling are synthetic HTTP responses, the queue has no consumer,
+and a temporary memory allocation does not prove a leak. Configuration recovery
+requires rerunning the configuration scenario rather than checking the general
+health endpoint. The deployment-regression scenario intentionally keeps returning
+HTTP 500, even after its release marker changes.
+
+Use the scenario-specific investigation prompt in the connected Azure SRE Agent.
+Expand **Create this dashboard in SRE Agent Live Reports** for a reusable report
+prompt and the scenario-filtered Log Analytics query. These templates require
+read-only evidence gathering, citations, explicit missing-data states, and human
+approval before changes. No report, investigation, or remediation is executed by
+the portal itself. Metrics that are not instrumented must remain unavailable
+rather than being filled with the sample values.
+
+Scenario walkthroughs and samples remain accessible when the live telemetry API
+is unavailable. Coverage badges show **Awaiting telemetry** until data arrives;
+sample values never populate the live scorecard or evidence table.
 
 The portal groups the ten scenarios into business concerns:
 
@@ -243,10 +301,18 @@ The summary reports:
 * Azure location count
 * Supporting control count
 
-The architecture diagram groups the deployment into experience, compute and AI,
-evidence, and control layers. Use it to explain how the public portals, Function
-App, SRE Agent, observability services, storage, identity, and guardrails work
-together.
+The Mermaid architecture diagram separates the system into two connected paths:
+
+* The deployment path shows PowerShell and Bicep orchestration, the private
+  Function package, the three resource groups, and the budget and teardown
+  controls
+* The execution and investigation path shows controlled scenario calls,
+  Application Insights, Log Analytics, Azure Monitor alerts, SRE Agent
+  investigations, Live Reports, public portals, and the workbook
+
+Solid arrows represent deployment or execution flow. Dotted arrows represent
+cost and lifecycle governance. Use the diagram to explain how deployment
+automation becomes a governed telemetry-to-investigation workflow.
 
 ### Inventory filters
 
@@ -354,3 +420,15 @@ availability, and the dashboard API response. The health and API endpoints are:
 
 * <https://sredemo-be3wpifmuf.azurewebsites.net/api/health>
 * <https://sredemo-be3wpifmuf.azurewebsites.net/api/dashboard-data?hours=24>
+
+### The component inventory reports a non-JSON response
+
+The component page requires the Azure Functions `resources-data` API on the same
+origin. A static server such as `python -m http.server` serves HTML error pages
+instead of running the API.
+
+Open the deployed [component command center](https://sredemo-be3wpifmuf.azurewebsites.net/api/resources).
+For local development, run `func start` from the project root with the required
+Azure settings and credentials, then open
+<http://localhost:7071/api/resources>. Do not open the HTML file directly or use a
+static-only server for live inventory.

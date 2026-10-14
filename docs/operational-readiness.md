@@ -121,7 +121,6 @@ $292 fixed SRE Agent planning estimate.
 * All four alerts reference the approved action group
 * Action group ownership and escalation are documented
 * The component dashboard shows 19 top-level resources
-* The partner governance page shows 23 total components
 * The cost planner defaults to the $57 evaluation estimate
 
 ## Teardown

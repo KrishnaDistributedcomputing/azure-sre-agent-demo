@@ -110,6 +110,13 @@ if ($MyInvocation.InvocationName -ne '.') {
             '--output', 'none'
         ) | Out-Null
 
+        Write-Host 'Configuring read-only SRE Agent access to the demo workload.' -ForegroundColor Cyan
+        & (Join-Path $PSScriptRoot 'Configure-AgentContext.ps1') `
+            -SubscriptionId $SubscriptionId -Apply
+        if ($LASTEXITCODE -ne 0) {
+            throw 'SRE Agent workload access configuration failed.'
+        }
+
         Write-Host "Publishing Function App $FunctionAppName." -ForegroundColor Cyan
         Push-Location $RepositoryRoot
         try {

@@ -69,8 +69,43 @@ Deploy the stack:
   -AlertEmail <your-alert-email>
 ```
 
-The script writes non-secret resource outputs to `deployment-output.json`, then
-publishes the Python Function App.
+The script writes non-secret resource outputs to `deployment-output.json`,
+grants the existing Agent scoped read access to the demo group, then publishes
+the Python Function App. Native source connections require separate setup.
+
+## Configure Agent context
+
+Use the [illustrated configuration and skills guide](docs/sre-agent-configuration-and-skills.md)
+for step-by-step native setup, screenshots, a complete example skill procedure,
+read-only tool selection, enablement, validation, and troubleshooting.
+The [web walkthrough](https://sredemo-be3wpifmuf.azurewebsites.net/api/sre-deep-dive#skills-guide)
+links to the GitHub guide and displays the configuration screenshots.
+
+For an existing deployment, run the scoped check without redeploying infrastructure:
+
+```powershell
+.\scripts\Configure-AgentContext.ps1 `
+  -SubscriptionId 26081847-0bf1-4c5a-84f5-f18dd3902200
+```
+
+Use `-Apply -WhatIf` to preview missing assignments and `-Apply` to grant them.
+The script resolves the Agent's operational user-assigned identity and checks
+Reader, Monitoring Reader, Log Analytics Reader, Workbook Reader, and Storage
+Blob Data Reader on `rg-sre-demo`. It does not grant Contributor, alter run mode,
+authorize GitHub, configure native connectors, or reset the teardown schedule.
+Inspect `ReadAccessReady` and `MissingRoles`; `NativeConnectionsVerified` remains
+false until you independently verify the native setup and an actual Agent query.
+
+In native setup, register `rg-sre-demo` with **Reader** access, connect
+`appi-sredemo-be3wpifmuf` and `log-sredemo-be3wpifmuf` through the operational
+managed identity, and connect this repository through approved GitHub OAuth.
+Upload reviewed, non-secret documentation as knowledge. Keep **Review** mode.
+Leave incidents disconnected unless an approved integration is required.
+
+See [Configure this Agent](https://sredemo-be3wpifmuf.azurewebsites.net/api/sre-deep-dive#setup)
+for resource names, connection steps, authorization troubleshooting, validation
+KQL, a read-only Agent prompt, and Microsoft Learn references. A successful
+connection card is not proof that the Agent can query the workload.
 
 ## Run and investigate
 
@@ -118,16 +153,17 @@ See the [Business Showcase Portal Guide](docs/portal-guide.md) for audience
 paths, dashboard interpretation, all ten business scenarios, costing
 assumptions, a presentation playbook, and troubleshooting.
 
+Read the portal's [SRE Agent technical deep dive](https://sredemo-be3wpifmuf.azurewebsites.net/api/sre-deep-dive)
+for architecture, evidence engineering, scenario investigations, Live Reports,
+governance, cost controls, and linked Microsoft Learn guidance. Each business
+risk scenario also includes Azure component roles, illustrative sample
+dashboards, and investigation and report prompts.
+
 Use the
 [Partner Engagement and Azure Implementation Requirements](docs/partner-engagement-requirements.md)
 as the mandatory baseline for partner-led customer interactions, technical
 decisions, implementation evidence, security, cost governance, operational
 handover, and acceptance.
-
-Present the same requirements through the public Partner Governance command
-center:
-
-<https://sredemo-be3wpifmuf.azurewebsites.net/api/partner>
 
 See the [Operational Readiness Pack](docs/operational-readiness.md) for the
 availability test, platform health alerts, HTTP failure alert, Function health
